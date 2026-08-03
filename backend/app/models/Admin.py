@@ -21,13 +21,8 @@ class Admin(db.Model):
     phone = db.Column(db.String(11), nullable=False)
     password_hash = db.Column(db.String(255), nullable=False)
     created_at = db.Column(
-        db.DateTime(timezone=True), 
-        server_default=db.text("TIMEZONE('Africa/Lagos', NOW())")
-    )
-    updated_at = db.Column(
         db.DateTime(timezone=True),
-        server_default=db.text("TIMEZONE('Africa/Lagos', NOW())"),
-        onupdate=db.text("TIMEZONE('Africa/Lagos', NOW())")
+        server_default=db.text("TIMEZONE('Africa/Lagos', NOW())")
     )
 
     # Helper method to set hashed password
@@ -46,5 +41,5 @@ class Admin(db.Model):
             "fullname": self.fullname,
             "email": self.email,
             "phone": self.phone,
-            "created_at": self.created_at
+            "created_at": self.created_at.isoformat() if self.created_at else None
         }

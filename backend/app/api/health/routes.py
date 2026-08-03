@@ -17,7 +17,7 @@ def health_check():
     response_data = {
         "status": "SUCCESS",
         "code": 200,
-        "message": "Clock'n API is healthy and running.",
+        "message": "ASF LASU OJO Retreat API is healthy and running.",
         "meta": {
             "uptime": f"{uptime_seconds} secs" if uptime_seconds > 1 else f"{uptime_seconds} sec",
         }

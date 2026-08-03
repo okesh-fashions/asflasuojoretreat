@@ -51,29 +51,16 @@ def create_app():
     # Force load models into the application context for migrations
     from app.models.TokenBlocklist import TokenBlocklist
     from app.models.Admin import Admin
+    from app.models.Attendees import Attendees
 
     # Blueprints
     from app.api.health.routes import health_bp
     from app.api.auth.routes import auth_bp
+    from app.api.attendees.routes import attendees_bp
 
     app.register_blueprint(health_bp, url_prefix='/api/v1/health')
     app.register_blueprint(auth_bp, url_prefix='/api/v1/auth')
-
-    # ====================================================================
-    # REGISTER CUSTOM MANAGEMENT COMMANDS
-    # ====================================================================
-    # @app.cli.command("seed-permissions")
-    # def seed_permissions_command():
-    #     """Flask CLI integration hook to safely force populate database rules."""
-    #     print("Booting core system database permissions synchronizer...")
-    #
-    #     # We push the runtime context explicitly right here
-    #     with app.app_context():
-    #         # Import inside context to avoid any circular dependency traps
-    #         from app.__init__ import seed_system_permissions_and_roles
-    #         seed_system_permissions_and_roles()
-    #
-    #     print("Permissions synchronization complete.")
+    app.register_blueprint(attendees_bp, url_prefix='/api/v1/attendees')
 
     # ====================================================================
     # INITIALIZE BACKGROUND SCHEDULER
@@ -99,7 +86,6 @@ def create_app():
             print("Scheduler started with Africa/Lagos time tracking.")
         else:
             print("Scheduler already active, skipping initialization.")
-
 
     # ====================================================================
     # GLOBAL API ERROR HANDLERS (Registered directly on the active 'app')
@@ -145,80 +131,3 @@ def check_if_token_revoked(jwt_header, jwt_payload):
     # If token is found in the blocklist table, returns True (Access Denied)
     # If token is NOT found, returns False (Access Granted)
     return token is not None
-
-
-# Function to add roles and permissions
-# def seed_system_permissions_and_roles():
-#     """Idempotently populates core permissions and maps them to default roles."""
-#     from app.models.Permission import Permission
-#     from app.models.Role import Role
-#     from app import db
-#
-#     # 1. Define ALL system permissions.
-#     system_permissions = [  # All permissions
-#         "manage_roles",
-#         "view_all_attendance",
-#         "view_my_attendance",
-#         "clock_in_out",
-#         "manage_teachers",
-#         "view_my_profile",
-#         "manage_qr",
-#         "view_all_stats",
-#         "manage_teacher_requests",
-#         "request_permission"
-#     ]
-#     teacher_allowed = [  # Teacher permissions
-#         "view_my_attendance",
-#         "clock_in_out",
-#         "view_my_profile",
-#         "request_permission"
-#     ]
-#
-#     try:
-#         # 2. Seed missing permissions safely
-#         permission_objects = {}
-#         for perm_name in system_permissions:
-#             perm = db.session.execute(db.select(Permission).filter_by(
-#                 name=perm_name)).scalar_one_or_none()
-#             if not perm:
-#                 perm = Permission(name=perm_name)
-#                 db.session.add(perm)
-#                 print(f"Created system permission: '{perm_name}'")
-#             permission_objects[perm_name] = perm
-#
-#         # Flush variations to DB so objects obtain relational state
-#         db.session.flush()
-#
-#         # 3. Secure and setup core lookup roles
-#         admin_role = db.session.execute(
-#             db.select(Role).filter_by(name="Admin")).scalar_one_or_none()
-#         if not admin_role:
-#             admin_role = Role(name="Admin")
-#             db.session.add(admin_role)
-#
-#         teacher_role = db.session.execute(
-#             db.select(Role).filter_by(name="Teacher")).scalar_one_or_none()
-#         if not teacher_role:
-#             teacher_role = Role(name="Teacher")
-#             db.session.add(teacher_role)
-#
-#         db.session.flush()
-#
-#         # 4. Map Permissions to Roles (Idempotently)
-#         # Teachers only get standard utility permissions
-#         for perm_name in teacher_allowed:
-#             target_perm = permission_objects[perm_name]
-#             if target_perm not in teacher_role.permissions:
-#                 teacher_role.permissions.append(target_perm)
-#
-#         # Admins get absolutely everything!
-#         for target_perm in permission_objects.values():
-#             if target_perm not in admin_role.permissions:
-#                 admin_role.permissions.append(target_perm)
-#
-#         db.session.commit()
-#         print("Permissions and Role configurations successfully synchronized.")
-#
-#     except Exception as e:
-#         db.session.rollback()
-#         print(f"Warning: Auto-seeding permissions failed: {str(e)}")

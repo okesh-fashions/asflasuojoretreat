@@ -4,7 +4,6 @@ from flask import Blueprint, jsonify, request
 from app import db, limiter
 from app.models.TokenBlocklist import TokenBlocklist
 from app.models.Admin import Admin
-# from app.utils.decorators import permissions_required
 from flask_jwt_extended import create_access_token, create_refresh_token, jwt_required, get_jwt, get_jwt_identity
 from dotenv import load_dotenv
 import os
@@ -126,7 +125,7 @@ def get_profile_endpoint():
     # Modern execution replacement for deprecated .query.get()
     admin = db.session.get(Admin, current_admin_id)
 
-    if not teacher:
+    if not admin:
         return jsonify({
             "status": "ERROR",
             "code": 404,
