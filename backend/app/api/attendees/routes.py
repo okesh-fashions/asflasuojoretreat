@@ -115,18 +115,33 @@ def attendee_register_endpoint():
 @limiter.limit('15 per minute')
 @jwt_required()
 def get_attendees_endpoint():
-    # Modern SQLAlchemy 2.0 select query execution syntax
-    attendees = db.session.execute(db.select(Attendees)).scalars().all()
+    # FIXED: Added safe pagination defaults to shield system RAM limits
+    page = request.args.get('page', 1, type=int)
+    per_page = request.args.get('per_page', 50, type=int)
 
-    attendees_list = [
-        attendee.to_dict() for attendee in attendees
-    ]
+    # Cap total pagination limits to prevent client abuse
+    if per_page > 100:
+        per_page = 100
+
+    pagination = db.paginate(
+        db.select(Attendees).order_by(Attendees.registered_on.desc()),
+        page=page,
+        per_page=per_page,
+        error_out=False
+    )
 
     return jsonify({
         "status": "SUCCESS",
         "message": "Retrieved all attendees successfully!",
-        "attendees": attendees_list,
-        "code": 200
+        "attendees": [attendee.to_dict() for attendee in pagination.items],
+        "code": 200,
+        "meta": {
+            "total_records": pagination.total,
+            "current_page": pagination.page,
+            "total_pages": pagination.pages,
+            "has_next": pagination.has_next,
+            "has_prev": pagination.has_prev
+        }
     }), 200
 
 
@@ -195,10 +210,10 @@ def get_attendees_stats_endpoint():
     try:
         query = db.select(
             func.count(Attendees.id).label("total_attendees"),
-            func.sum(db.case((Attendees.is_confirmed == True, 1), else_=0)).label(
+            func.sum(case((Attendees.is_confirmed == True, 1), else_=0)).label(
                 "confirmed_attendees"),
-            func.sum(db.case((Attendees.is_visitor == True, 1), else_=0)).label(
-                "visitor_count")
+            func.sum(case((Attendees.is_visitor == True, 1), else_=0)
+                     ).label("visitor_count")
         )
 
         stats_record = db.session.execute(query).one()
