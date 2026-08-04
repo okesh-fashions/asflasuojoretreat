@@ -5,6 +5,7 @@ from app import db, limiter
 from app.models.Attendees import Attendees
 from app.utils.extensions import generate_QR
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy import case, func
 from flask_jwt_extended import jwt_required
 import logging
 
@@ -179,6 +180,47 @@ def confirm_attendee_endpoint():
         db.session.rollback()
         # Log the actual raw error on your Kubuntu server logs securely
         logger.error(f"Confirmation crash: {str(e)}", exc_info=True)
+        return jsonify({
+            "status": "ERROR",
+            "message": "An internal system error occurred. Please try again later.",
+            "code": 500
+        }), 500
+
+
+# api/v1/attendees/stats
+@attendees_bp.route("/stats", methods=["GET"])
+@limiter.limit('30 per minute')
+@jwt_required()
+def get_attendees_stats_endpoint():
+    try:
+        query = db.select(
+            func.count(Attendees.id).label("total_attendees"),
+            func.sum(db.case((Attendees.is_confirmed == True, 1), else_=0)).label(
+                "confirmed_attendees"),
+            func.sum(db.case((Attendees.is_visitor == True, 1), else_=0)).label(
+                "visitor_count")
+        )
+
+        stats_record = db.session.execute(query).one()
+
+        total_attendees = int(stats_record.total_attendees or 0)
+        confirmed_attendees = int(stats_record.confirmed_attendees or 0)
+        visitor_count = int(stats_record.visitor_count or 0)
+
+        return jsonify({
+            "status": "SUCCESS",
+            "message": "Retrieved attendee statistics successfully!",
+            "stats": {
+                "total_attendees": total_attendees,
+                "confirmed_attendees": confirmed_attendees,
+                "awaiting_confirmation": total_attendees - confirmed_attendees,
+                "visitor_count": visitor_count
+            },
+            "code": 200
+        }), 200
+
+    except Exception as e:
+        logger.error(f"Stats retrieval crash: {str(e)}", exc_info=True)
         return jsonify({
             "status": "ERROR",
             "message": "An internal system error occurred. Please try again later.",
