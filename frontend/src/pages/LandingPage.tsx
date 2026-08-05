@@ -38,7 +38,8 @@ type AttendeeRecord = {
 const retreatInfo = {
   name: "Anglican Students' Fellowship LASU OJO Retreat Registration",
   motto: "Arise...Shine! (Isaiah 60 vs 1)",
-  slogan: "ASF...Restoring the Ancient Landmark",
+  hail: "ASF Arise...Shine!",
+  slogan: "ASF...Restoring the Ancient Landmark!",
   school: "LASU Ojo Campus",
   date: "Friday, 13th - Sunday, 15th November 2026",
   venue: "Bishop James Johnson Memorial Anglican Church (BJJMAC), PPL, Okoko.",
@@ -179,15 +180,44 @@ export function LandingPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#f7f1ef] text-[#2a0d18]">
-      <div className="mx-auto max-w-7xl px-4 pb-16 pt-6 sm:px-6 lg:px-8">
-        <header className="mb-10 flex items-center justify-between rounded-full border border-[#5b1e2e]/15 bg-white/75 px-4 py-3 shadow-[0_18px_40px_-30px_rgba(91,30,46,0.5)] backdrop-blur-xl sm:px-6">
+    <div className="relative min-h-screen overflow-hidden bg-gradient-to-br from-[#f7f1ef] via-[#f0e8e6] to-[#e8ddda]">
+      {/* Prism Background Effects */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none">
+        {/* Prism 1 - Top Left */}
+        <div className="absolute -top-40 -left-40 h-96 w-96 rounded-full bg-gradient-to-br from-[#5b1e2e]/10 via-purple-500/5 to-cyan-500/5 blur-3xl animate-pulse" />
+
+        {/* Prism 2 - Top Right */}
+        <div className="absolute -top-20 -right-20 h-80 w-80 rounded-full bg-gradient-to-bl from-pink-500/10 via-[#5b1e2e]/5 to-blue-500/5 blur-3xl animate-pulse delay-1000" />
+
+        {/* Prism 3 - Bottom Left */}
+        <div className="absolute -bottom-40 -left-20 h-96 w-96 rounded-full bg-gradient-to-tr from-cyan-500/5 via-[#5b1e2e]/10 to-purple-500/5 blur-3xl animate-pulse delay-700" />
+
+        {/* Prism 4 - Bottom Right */}
+        <div className="absolute -bottom-20 -right-40 h-[500px] w-[500px] rounded-full bg-gradient-to-tl from-[#5b1e2e]/5 via-pink-500/5 to-amber-500/5 blur-3xl animate-pulse delay-500" />
+
+        {/* Prism 5 - Center */}
+        <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 h-[600px] w-[600px] rounded-full bg-gradient-to-r from-[#5b1e2e]/5 via-purple-500/5 to-cyan-500/5 blur-3xl animate-pulse delay-300" />
+
+        {/* Prism Light Rays */}
+        <div className="absolute top-0 left-0 h-full w-full bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-transparent via-[#5b1e2e]/5 to-transparent opacity-30" />
+
+        {/* Glass Prism Refractions */}
+        <div className="absolute top-1/4 left-1/4 h-32 w-32 rotate-45 bg-gradient-to-br from-white/20 via-transparent to-white/5 blur-2xl" />
+        <div className="absolute bottom-1/4 right-1/4 h-40 w-40 -rotate-12 bg-gradient-to-tl from-white/15 via-transparent to-white/5 blur-2xl" />
+      </div>
+
+      {/* Main Content with Glassmorphism */}
+      <div className="relative z-10 mx-auto max-w-7xl px-4 pb-16 pt-6 sm:px-6 lg:px-8">
+        <header className="relative mb-10 flex items-center justify-between rounded-2xl border border-white/20 bg-white/30 px-4 py-3 shadow-[0_8px_32px_rgba(91,30,46,0.12),inset_0_1px_0_rgba(255,255,255,0.6)] backdrop-blur-[20px] backdrop-saturate-[180%] sm:px-6">
           <div className="flex items-center gap-3">
-            <img
-              src="/asflogo.png"
-              alt="ASF LASU OJO Logo"
-              className="h-11 w-11 rounded-full border border-[#5b1e2e]/20 object-cover bg-white"
-            />
+            <div className="relative">
+              <div className="absolute -inset-1 rounded-full bg-gradient-to-r from-[#5b1e2e]/20 via-purple-500/20 to-cyan-500/20 blur-xl" />
+              <img
+                src="/asflogo.png"
+                alt="ASF LASU OJO Logo"
+                className="relative h-11 w-11 rounded-full border border-white/30 object-cover bg-white/50 shadow-[0_8px_32px_rgba(91,30,46,0.15)]"
+              />
+            </div>
             <div>
               <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-[#5b1e2e]/70">
                 ASF LASU OJO
@@ -200,8 +230,9 @@ export function LandingPage() {
 
           <Link
             to="/admin"
-            className="inline-flex items-center gap-2 rounded-full bg-[#5b1e2e] px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-[#5b1e2e]/20 transition hover:bg-[#431724]"
+            className="relative inline-flex items-center gap-2 overflow-hidden rounded-full bg-[#5b1e2e] px-4 py-2 text-sm font-semibold text-white shadow-[0_8px_32px_rgba(91,30,46,0.25),inset_0_1px_0_rgba(255,255,255,0.1)] transition-all hover:scale-105 hover:shadow-[0_12px_40px_rgba(91,30,46,0.35)] active:scale-95"
           >
+            <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent translate-x-[-100%] hover:translate-x-[100%] transition-transform duration-1000" />
             Admin portal
             <ArrowRight className="h-4 w-4" />
           </Link>
@@ -210,55 +241,61 @@ export function LandingPage() {
         <main className="space-y-8">
           <section className="grid items-center gap-6 lg:grid-cols-[1.1fr_0.9fr]">
             <div className="space-y-5 py-2">
-              <div className="inline-flex items-center gap-2 rounded-full border border-[#5b1e2e]/15 bg-[#fffaf9] px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.26em] text-[#5b1e2e] shadow-sm">
+              <div className="inline-flex items-center gap-2 rounded-full border border-white/30 bg-white/40 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.26em] text-[#5b1e2e] shadow-[0_4px_16px_rgba(91,30,46,0.08)] backdrop-blur-sm">
                 <Sparkles className="h-3.5 w-3.5" />
                 1st Semester's Retreat
               </div>
 
               <div className="space-y-4">
-                <h1 className="max-w-xl text-4xl font-black leading-tight tracking-[-0.06em] text-[#220b13] sm:text-5xl">
+                <h1 className="max-w-xl text-4xl font-black leading-tight tracking-[-0.06em] text-[#220b13] sm:text-5xl bg-gradient-to-r from-[#220b13] via-[#5b1e2e] to-[#220b13] bg-clip-text text-transparent">
                   {retreatInfo.name}
                 </h1>
-                <p className="max-w-xl text-base leading-7 text-[#5b1e2e]/80 sm:text-lg">
+                <p className="max-w-xl text-base leading-7 text-[#5b1e2e]/80 sm:text-lg backdrop-blur-sm">
                   A simple, secure registration experience for fellows and
                   guests preparing for a spiritually refreshing retreat.
                 </p>
               </div>
 
               <div className="flex flex-wrap items-center gap-3 text-sm text-[#3e1d2b]">
-                <div className="inline-flex items-center gap-2 rounded-full border border-[#5b1e2e]/10 bg-white/80 px-3 py-2 shadow-sm">
+                <div className="inline-flex items-center gap-2 rounded-full border border-white/30 bg-white/40 px-3 py-2 shadow-[0_4px_16px_rgba(91,30,46,0.06)] backdrop-blur-sm">
                   <ShieldCheck className="h-4 w-4 text-[#5b1e2e]" />
                   {retreatInfo.motto}
                 </div>
-                <div className="inline-flex items-center gap-2 rounded-full border border-[#5b1e2e]/10 bg-white/80 px-3 py-2 shadow-sm">
+                <div className="inline-flex items-center gap-2 rounded-full border border-white/30 bg-white/40 px-3 py-2 shadow-[0_4px_16px_rgba(91,30,46,0.06)] backdrop-blur-sm">
                   <Sparkles className="h-4 w-4 text-[#5b1e2e]" />
                   {retreatInfo.slogan}
                 </div>
               </div>
 
               <div className="grid gap-3 sm:grid-cols-2">
-                <div className="rounded-2xl border border-[#5b1e2e]/10 bg-white/80 p-4 shadow-[0_18px_40px_-30px_rgba(91,30,46,0.5)]">
-                  <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[#5b1e2e]/60">
+                <div className="relative overflow-hidden rounded-2xl border border-white/30 bg-white/40 p-4 shadow-[0_8px_32px_rgba(91,30,46,0.1),inset_0_1px_0_rgba(255,255,255,0.6)] backdrop-blur-md">
+                  <div className="absolute -top-10 -right-10 h-20 w-20 rounded-full bg-gradient-to-br from-[#5b1e2e]/10 to-purple-500/10 blur-2xl" />
+                  <p className="relative text-xs font-semibold uppercase tracking-[0.22em] text-[#5b1e2e]/60">
                     Date
                   </p>
-                  <p className="mt-2 text-sm font-semibold text-[#2a0d18]">
+                  <p className="relative mt-2 text-sm font-semibold text-[#2a0d18]">
                     {retreatInfo.date}
                   </p>
                 </div>
-                <div className="rounded-2xl border border-[#5b1e2e]/10 bg-white/80 p-4 shadow-[0_18px_40px_-30px_rgba(91,30,46,0.5)]">
-                  <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[#5b1e2e]/60">
+                <div className="relative overflow-hidden rounded-2xl border border-white/30 bg-white/40 p-4 shadow-[0_8px_32px_rgba(91,30,46,0.1),inset_0_1px_0_rgba(255,255,255,0.6)] backdrop-blur-md">
+                  <div className="absolute -bottom-10 -left-10 h-20 w-20 rounded-full bg-gradient-to-tr from-cyan-500/10 to-[#5b1e2e]/10 blur-2xl" />
+                  <p className="relative text-xs font-semibold uppercase tracking-[0.22em] text-[#5b1e2e]/60">
                     Venue
                   </p>
-                  <p className="mt-2 text-sm font-semibold text-[#2a0d18]">
+                  <p className="relative mt-2 text-sm font-semibold text-[#2a0d18]">
                     {retreatInfo.venue}
                   </p>
                 </div>
               </div>
             </div>
 
-            <div className="rounded-[28px] border border-[#5b1e2e]/10 bg-white/85 p-4 shadow-[0_40px_80px_-40px_rgba(91,30,46,0.45)] backdrop-blur-xl sm:p-6">
+            <div className="relative rounded-[28px] border border-white/30 bg-white/30 p-4 shadow-[0_8px_32px_rgba(91,30,46,0.12),inset_0_1px_0_rgba(255,255,255,0.6)] backdrop-blur-[20px] backdrop-saturate-[180%] sm:p-6">
+              {/* Glass highlight */}
+              <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-white/60 to-transparent" />
+              <div className="absolute -top-px left-1/4 right-1/4 h-[2px] bg-gradient-to-r from-transparent via-white/80 to-transparent blur-sm" />
+
               {!savedAttendee ? (
-                <form onSubmit={handleSubmit} className="space-y-4">
+                <form onSubmit={handleSubmit} className="relative space-y-4">
                   <div className="mb-2 flex items-center justify-between">
                     <div>
                       <p className="text-[11px] font-semibold uppercase tracking-[0.25em] text-[#5b1e2e]/70">
@@ -268,7 +305,7 @@ export function LandingPage() {
                         Sign in quickly
                       </h2>
                     </div>
-                    <div className="rounded-full bg-[#5b1e2e]/5 p-2 text-[#5b1e2e]">
+                    <div className="rounded-full bg-[#5b1e2e]/10 p-2 text-[#5b1e2e] shadow-[0_4px_16px_rgba(91,30,46,0.1)] backdrop-blur-sm">
                       <UserRound className="h-5 w-5" />
                     </div>
                   </div>
@@ -283,7 +320,7 @@ export function LandingPage() {
                         updateField("fullname", event.target.value)
                       }
                       placeholder="Enter your full name"
-                      className="w-full rounded-2xl border border-[#5b1e2e]/15 bg-[#fffaf9] px-4 py-3 text-sm text-[#290d1a] outline-none transition focus:border-[#5b1e2e] focus:ring-2 focus:ring-[#5b1e2e]/10"
+                      className="w-full rounded-2xl border border-white/30 bg-white/50 px-4 py-3 text-sm text-[#290d1a] outline-none transition-all placeholder:text-[#5b1e2e]/40 focus:border-[#5b1e2e]/50 focus:bg-white/70 focus:shadow-[0_0_0_4px_rgba(91,30,46,0.08)] backdrop-blur-sm"
                     />
                     {errors.fullname && (
                       <p className="mt-1 text-xs text-[#b42318]">
@@ -306,7 +343,7 @@ export function LandingPage() {
                         inputMode="numeric"
                         maxLength={11}
                         placeholder="080XXXXXXXX"
-                        className="w-full rounded-2xl border border-[#5b1e2e]/15 bg-[#fffaf9] py-3 pl-10 pr-4 text-sm text-[#290d1a] outline-none transition focus:border-[#5b1e2e] focus:ring-2 focus:ring-[#5b1e2e]/10"
+                        className="w-full rounded-2xl border border-white/30 bg-white/50 py-3 pl-10 pr-4 text-sm text-[#290d1a] outline-none transition-all placeholder:text-[#5b1e2e]/40 focus:border-[#5b1e2e]/50 focus:bg-white/70 focus:shadow-[0_0_0_4px_rgba(91,30,46,0.08)] backdrop-blur-sm"
                       />
                     </div>
                     {errors.phone && (
@@ -316,7 +353,7 @@ export function LandingPage() {
                     )}
                   </div>
 
-                  <label className="flex items-center gap-3 rounded-2xl border border-[#5b1e2e]/10 bg-[#fffaf9] px-3 py-3 text-sm text-[#2c111d]">
+                  <label className="flex items-center gap-3 rounded-2xl border border-white/30 bg-white/40 px-3 py-3 text-sm text-[#2c111d] shadow-[0_4px_16px_rgba(91,30,46,0.04)] backdrop-blur-sm transition-all hover:bg-white/60">
                     <input
                       type="checkbox"
                       checked={form.is_visitor}
@@ -325,7 +362,7 @@ export function LandingPage() {
                       }
                       className="h-4 w-4 rounded border-[#5b1e2e]/20 text-[#5b1e2e] focus:ring-[#5b1e2e]"
                     />
-                    I am a visitor. Skip faculty, department, and level.
+                    I am an invitee. Skip faculty, department, and level.
                   </label>
 
                   {!form.is_visitor && (
@@ -339,7 +376,7 @@ export function LandingPage() {
                           onChange={(event) =>
                             updateField("faculty", event.target.value)
                           }
-                          className="w-full rounded-2xl border border-[#5b1e2e]/15 bg-[#fffaf9] px-4 py-3 text-sm text-[#290d1a] outline-none transition focus:border-[#5b1e2e] focus:ring-2 focus:ring-[#5b1e2e]/10"
+                          className="w-full rounded-2xl border border-white/30 bg-white/50 px-4 py-3 text-sm text-[#290d1a] outline-none transition-all focus:border-[#5b1e2e]/50 focus:bg-white/70 focus:shadow-[0_0_0_4px_rgba(91,30,46,0.08)] backdrop-blur-sm"
                         >
                           <option value="">Select faculty</option>
                           {facultyOptions.map((faculty) => (
@@ -365,7 +402,7 @@ export function LandingPage() {
                             updateField("department", event.target.value)
                           }
                           placeholder="Department"
-                          className="w-full rounded-2xl border border-[#5b1e2e]/15 bg-[#fffaf9] px-4 py-3 text-sm text-[#290d1a] outline-none transition focus:border-[#5b1e2e] focus:ring-2 focus:ring-[#5b1e2e]/10"
+                          className="w-full rounded-2xl border border-white/30 bg-white/50 px-4 py-3 text-sm text-[#290d1a] outline-none transition-all placeholder:text-[#5b1e2e]/40 focus:border-[#5b1e2e]/50 focus:bg-white/70 focus:shadow-[0_0_0_4px_rgba(91,30,46,0.08)] backdrop-blur-sm"
                         />
                         {errors.department && (
                           <p className="mt-1 text-xs text-[#b42318]">
@@ -383,7 +420,7 @@ export function LandingPage() {
                           onChange={(event) =>
                             updateField("level", event.target.value)
                           }
-                          className="w-full rounded-2xl border border-[#5b1e2e]/15 bg-[#fffaf9] px-4 py-3 text-sm text-[#290d1a] outline-none transition focus:border-[#5b1e2e] focus:ring-2 focus:ring-[#5b1e2e]/10"
+                          className="w-full rounded-2xl border border-white/30 bg-white/50 px-4 py-3 text-sm text-[#290d1a] outline-none transition-all focus:border-[#5b1e2e]/50 focus:bg-white/70 focus:shadow-[0_0_0_4px_rgba(91,30,46,0.08)] backdrop-blur-sm"
                         >
                           <option value="">Select level</option>
                           {levelOptions.map((level) => (
@@ -404,16 +441,17 @@ export function LandingPage() {
                   <button
                     type="submit"
                     disabled={isSubmitting}
-                    className="mt-2 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-[#5b1e2e] px-4 py-3.5 text-base font-semibold text-white shadow-lg shadow-[#5b1e2e]/20 transition hover:bg-[#471421] disabled:cursor-not-allowed disabled:opacity-75"
+                    className="relative mt-2 inline-flex w-full items-center justify-center gap-2 overflow-hidden rounded-2xl bg-[#5b1e2e] px-4 py-3.5 text-base font-semibold text-white shadow-[0_8px_32px_rgba(91,30,46,0.25),inset_0_1px_0_rgba(255,255,255,0.1)] transition-all hover:scale-[1.02] hover:shadow-[0_12px_40px_rgba(91,30,46,0.35)] disabled:cursor-not-allowed disabled:opacity-75 active:scale-95"
                   >
+                    <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent translate-x-[-100%] hover:translate-x-[100%] transition-transform duration-1000" />
                     {isSubmitting ? "Registering..." : "Register now"}
                     {!isSubmitting && <ArrowRight className="h-4 w-4" />}
                   </button>
                 </form>
               ) : (
-                <div className="space-y-5">
-                  <div className="flex items-center gap-3 rounded-2xl bg-[#f7eef1] p-3 text-[#2b0d18]">
-                    <div className="rounded-full bg-[#5b1e2e]/10 p-2 text-[#5b1e2e]">
+                <div className="relative space-y-5">
+                  <div className="flex items-center gap-3 rounded-2xl bg-white/50 p-3 text-[#2b0d18] shadow-[0_4px_16px_rgba(91,30,46,0.06)] backdrop-blur-sm">
+                    <div className="rounded-full bg-[#5b1e2e]/10 p-2 text-[#5b1e2e] shadow-[0_4px_16px_rgba(91,30,46,0.08)]">
                       <CheckCircle2 className="h-5 w-5" />
                     </div>
                     <div>
@@ -424,8 +462,9 @@ export function LandingPage() {
                     </div>
                   </div>
 
-                  <div className="rounded-[24px] border border-[#5b1e2e]/10 bg-[#fffaf9] p-4 text-center">
-                    <div className="mx-auto mb-4 flex w-48 items-center justify-center rounded-2xl bg-white p-3 shadow-sm ring-1 ring-[#5b1e2e]/10">
+                  <div className="relative overflow-hidden rounded-[24px] border border-white/30 bg-white/50 p-4 text-center shadow-[0_8px_32px_rgba(91,30,46,0.08)] backdrop-blur-sm">
+                    <div className="absolute -top-10 -right-10 h-32 w-32 rounded-full bg-gradient-to-br from-[#5b1e2e]/5 to-purple-500/5 blur-2xl" />
+                    <div className="mx-auto mb-4 flex w-48 items-center justify-center rounded-2xl bg-white/50 p-3 shadow-[0_8px_32px_rgba(91,30,46,0.1)] ring-1 ring-white/30 backdrop-blur-sm">
                       {qrDataUrl ? (
                         <img
                           src={qrDataUrl}
@@ -433,7 +472,7 @@ export function LandingPage() {
                           className="h-48 w-48 rounded-xl object-cover"
                         />
                       ) : (
-                        <div className="h-48 w-48 animate-pulse rounded-xl bg-[#f3e6e8]" />
+                        <div className="h-48 w-48 animate-pulse rounded-xl bg-white/30" />
                       )}
                     </div>
                     <p className="text-[11px] font-semibold uppercase tracking-[0.25em] text-[#5b1e2e]/70">
@@ -445,26 +484,28 @@ export function LandingPage() {
                     <button
                       type="button"
                       onClick={downloadQr}
-                      className="mt-4 inline-flex items-center gap-2 rounded-full border border-[#5b1e2e]/15 bg-[#5b1e2e] px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-[#431724]"
+                      className="relative mt-4 inline-flex items-center gap-2 overflow-hidden rounded-full border border-white/30 bg-[#5b1e2e] px-4 py-2 text-sm font-semibold text-white shadow-[0_4px_16px_rgba(91,30,46,0.2),inset_0_1px_0_rgba(255,255,255,0.1)] transition-all hover:scale-105 hover:shadow-[0_8px_24px_rgba(91,30,46,0.3)] active:scale-95"
                     >
+                      <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent translate-x-[-100%] hover:translate-x-[100%] transition-transform duration-1000" />
                       <Download className="h-4 w-4" />
                       Download QR
                     </button>
                   </div>
 
-                  <div className="rounded-2xl border border-[#5b1e2e]/10 bg-[#f9f1f3] p-4 text-sm leading-6 text-[#3d1d2b]">
-                    <p className="font-semibold text-[#2a0d18]">
+                  <div className="relative overflow-hidden rounded-2xl border border-white/30 bg-white/40 p-4 text-sm leading-6 text-[#3d1d2b] shadow-[0_4px_16px_rgba(91,30,46,0.04)] backdrop-blur-sm">
+                    <div className="absolute -bottom-10 -left-10 h-24 w-24 rounded-full bg-gradient-to-tr from-cyan-500/5 to-[#5b1e2e]/5 blur-2xl" />
+                    <p className="relative font-semibold text-[#2a0d18]">
                       You have registered for the {retreatInfo.name}.
                     </p>
-                    <p className="mt-1">Date: {retreatInfo.date}</p>
-                    <p>Venue: {retreatInfo.venue}</p>
-                    <p>School: {retreatInfo.school}</p>
+                    <p className="relative mt-1">Date: {retreatInfo.date}</p>
+                    <p className="relative">Venue: {retreatInfo.venue}</p>
+                    <p className="relative">School: {retreatInfo.school}</p>
                   </div>
 
                   <button
                     type="button"
                     onClick={handleReset}
-                    className="w-full rounded-2xl border border-[#5b1e2e]/15 bg-[#fffaf9] px-4 py-3 text-sm font-semibold text-[#2a0d18] transition hover:bg-[#f8ecee]"
+                    className="w-full rounded-2xl border border-white/30 bg-white/40 px-4 py-3 text-sm font-semibold text-[#2a0d18] transition-all hover:bg-white/60 hover:shadow-[0_4px_16px_rgba(91,30,46,0.08)] backdrop-blur-sm"
                   >
                     Register another person
                   </button>
@@ -475,7 +516,7 @@ export function LandingPage() {
         </main>
       </div>
 
-      <footer className="border-t border-[#5b1e2e]/10 bg-white/75 py-6 text-center text-sm text-[#4f2a36] backdrop-blur-xl">
+      <footer className="relative z-10 border-t border-white/20 bg-white/30 py-6 text-center text-sm text-[#4f2a36] backdrop-blur-[20px] backdrop-saturate-[180%]">
         <div className="mx-auto flex max-w-7xl flex-col items-center justify-center gap-1 px-4 sm:flex-row sm:gap-4">
           <span className="font-semibold text-[#2a0d18]">
             Anglican Students’ Fellowship LASU OJO
@@ -483,18 +524,19 @@ export function LandingPage() {
           <span className="hidden sm:inline">•</span>
           <span>{retreatInfo.school}</span>
           <span className="hidden sm:inline">•</span>
-          <span>{retreatInfo.motto}</span>
+          <span>{retreatInfo.hail}</span>
+          <span>{retreatInfo.slogan}</span>
         </div>
       </footer>
 
-      <div className="fixed bottom-4 left-4 z-40 flex items-center gap-3 rounded-full border border-[#5b1e2e]/10 bg-white/90 px-3 py-2 shadow-[0_18px_42px_-30px_rgba(91,30,46,0.55)] backdrop-blur-lg">
+      <div className="fixed bottom-3 right-3 z-40 flex items-center gap-3 rounded-full border border-white/30 bg-gradient-to-br from-white/30 via-pink-500/5 to-cyan-500/10 px-3 py-2 shadow-[0_8px_32px_rgba(91,30,46,0.15),inset_0_1px_0_rgba(255,255,255,0.6)] backdrop-blur-3xl backdrop-saturate-[180%] transform scale-85 origin-bottom-right">
         <img
           src="/okesh_tech.jpg"
           alt="Okesh Tech"
-          className="h-9 w-9 rounded-full border border-[#5b1e2e]/10 object-cover"
+          className="h-9 w-9 rounded-full border border-white/30 object-cover shadow-[0_4px_16px_rgba(91,30,46,0.15)]"
         />
         <div className="leading-tight">
-          <p className="text-[9px] font-semibold uppercase tracking-[0.22em] text-[#5b1e2e]/60">
+          <p className="text-[9px] font-semibold uppercase tracking-[0.22em] text-[#5b1e2e]/70">
             Developed by
           </p>
           <p className="text-xs font-bold text-[#2a0d18]">Okechukwu Goodluck</p>
