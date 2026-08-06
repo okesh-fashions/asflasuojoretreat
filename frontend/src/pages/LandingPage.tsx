@@ -1,4 +1,5 @@
-// src/pages/LandingPage.tsx (updated with WhatsApp link and larger fonts)
+// src/pages/LandingPage.tsx (updated handleSubmit and related functions)
+
 import { useState } from "react";
 import QRCode from "qrcode";
 import toast from "react-hot-toast";
@@ -118,6 +119,85 @@ export function LandingPage() {
     return Object.keys(nextErrors).length === 0;
   };
 
+  // Function to generate QR code with branding
+  const generateBrandedQR = async (attendee: AttendeeRecord) => {
+    // Create a canvas to draw the branded QR
+    const canvas = document.createElement("canvas");
+    const ctx = canvas.getContext("2d");
+
+    // Set canvas size (increased for better quality)
+    const size = 600;
+    const padding = 40;
+    const qrSize = size - padding * 2;
+
+    canvas.width = size;
+    canvas.height = size;
+
+    if (!ctx) return null;
+
+    // Fill background
+    ctx.fillStyle = "#FFFFFF";
+    ctx.fillRect(0, 0, size, size);
+
+    // Draw border with gradient
+    const gradient = ctx.createLinearGradient(0, 0, size, 0);
+    gradient.addColorStop(0, "#5b1e2e");
+    gradient.addColorStop(1, "#7c2a3a");
+    ctx.strokeStyle = gradient;
+    ctx.lineWidth = 4;
+    ctx.strokeRect(2, 2, size - 4, size - 4);
+
+    // Draw header text
+    ctx.fillStyle = "#5b1e2e";
+    ctx.font = "bold 18px Arial, sans-serif";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "top";
+    ctx.fillText("ASF LASU OJO RETREAT", size / 2, 12);
+
+    // Draw ID
+    ctx.fillStyle = "#2a0d18";
+    ctx.font = "14px Arial, sans-serif";
+    ctx.fillText(`ATT ID: ${attendee.qrcode}`, size / 2, 36);
+
+    // Generate QR code
+    const qrCodeUrl = await QRCode.toDataURL(attendee.qrcode, {
+      width: qrSize,
+      margin: 0,
+      color: {
+        dark: "#2b0d18",
+        light: "#ffffff",
+      },
+    });
+
+    // Load QR code image onto canvas
+    const qrImage = new Image();
+    qrImage.src = qrCodeUrl;
+
+    return new Promise<string>((resolve, reject) => {
+      qrImage.onload = () => {
+        // Draw QR code in center
+        const x = padding;
+        const y = padding + 20; // Offset for header
+        ctx.drawImage(qrImage, x, y, qrSize, qrSize);
+
+        // Draw footer text
+        ctx.fillStyle = "#5b1e2e";
+        ctx.font = "11px Arial, sans-serif";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "bottom";
+        ctx.fillText(
+          "ASF Arise...Shine! • Restoring the Ancient Landmark!",
+          size / 2,
+          size - 8,
+        );
+
+        // Convert canvas to data URL
+        resolve(canvas.toDataURL("image/png"));
+      };
+      qrImage.onerror = reject;
+    });
+  };
+
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
@@ -142,16 +222,23 @@ export function LandingPage() {
 
       setSavedAttendee(attendee);
 
-      const qrUrl = await QRCode.toDataURL(attendee.qrcode, {
-        width: 1024,
-        margin: 2,
-        color: {
-          dark: "#2b0d18",
-          light: "#ffffff",
-        },
-      });
+      // Generate branded QR code
+      const brandedQrUrl = await generateBrandedQR(attendee);
+      if (brandedQrUrl) {
+        setQrDataUrl(brandedQrUrl);
+      } else {
+        // Fallback to regular QR if branded fails
+        const qrUrl = await QRCode.toDataURL(attendee.qrcode, {
+          width: 1024,
+          margin: 2,
+          color: {
+            dark: "#2b0d18",
+            light: "#ffffff",
+          },
+        });
+        setQrDataUrl(qrUrl);
+      }
 
-      setQrDataUrl(qrUrl);
       toast.success("Registration successful! Your QR code is ready.");
     } catch (error: unknown) {
       const message =
@@ -458,7 +545,7 @@ export function LandingPage() {
                       )}
                     </div>
                     <p className="text-xs font-semibold uppercase tracking-[0.25em] text-[#5b1e2e]/60 sm:text-sm">
-                      Unique ID
+                      ATTENDEE ID
                     </p>
                     <p className="mt-2 break-all text-base font-bold text-[#2a0d18] sm:text-lg">
                       {savedAttendee?.qrcode}
