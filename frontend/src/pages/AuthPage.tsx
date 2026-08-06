@@ -18,7 +18,6 @@ import autoTable from "jspdf-autotable";
 import { QrCodeScanner } from "../components/QrcodeComponent";
 import { useAuth } from "../contexts/AuthContext";
 import api from "../utils/axiosConfig";
-// import { cn } from "../lib/utils";
 
 type AttendeeRecord = {
   id: string;
@@ -510,6 +509,9 @@ export function AuthPage() {
     );
   }
 
+  // src/pages/AuthPage.tsx (updated section)
+  // ... keep all imports and code above the return statement the same ...
+
   return (
     <div className="min-h-screen bg-[#f6f0ee] px-4 py-4 text-[#2a0d18] sm:px-6 sm:py-6 lg:px-8">
       <div className="mx-auto max-w-7xl">
@@ -546,6 +548,7 @@ export function AuthPage() {
         </header>
 
         <main className="space-y-6">
+          {/* KPI Cards */}
           <section className="grid grid-cols-2 gap-3 sm:grid-cols-2 md:grid-cols-4 lg:gap-4">
             {summaryCards.map((card) => (
               <div
@@ -565,6 +568,20 @@ export function AuthPage() {
             ))}
           </section>
 
+          {/* QR Scanner - Full width above attendance manager */}
+          <section className="rounded-2xl bg-white/70 p-4 shadow-[0_2px_16px_rgba(0,0,0,0.06)] backdrop-blur-[12px] sm:p-6">
+            <div className="mb-2">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.25em] text-[#5b1e2e]/60">
+                Quick Check-in
+              </p>
+              <h3 className="text-lg font-bold text-[#220b13]">
+                Confirm Attendee by QR
+              </h3>
+            </div>
+            <QrCodeScanner onScan={handleConfirmAttendee} />
+          </section>
+
+          {/* Attendance Manager */}
           <section className="rounded-2xl bg-white/70 p-4 shadow-[0_2px_16px_rgba(0,0,0,0.06)] backdrop-blur-[12px] sm:p-6">
             <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div>
@@ -624,13 +641,6 @@ export function AuthPage() {
                   className="w-full rounded-lg border border-[#5b1e2e]/10 bg-white/80 px-4 py-2 text-sm outline-none transition placeholder:text-[#5b1e2e]/40 focus:border-[#5b1e2e]/30 focus:bg-white/90 focus:shadow-[0_0_0_3px_rgba(91,30,46,0.05)]"
                 />
               </div>
-            </div>
-
-            <div className="mb-4 flex justify-end">
-              <QrCodeScanner
-                label="Scan QR code to confirm attendance"
-                onScan={handleConfirmAttendee}
-              />
             </div>
 
             <div className="overflow-x-auto">
