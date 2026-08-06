@@ -1,3 +1,4 @@
+// src/components/QrModal.tsx
 import { useEffect, useState } from "react";
 import { Download, Loader2, X } from "lucide-react";
 import QRCode from "qrcode";
