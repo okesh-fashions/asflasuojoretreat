@@ -1,36 +1,49 @@
-# app/api/register/routes.py
+# app/api/attendees/routes.py
 
+import logging
 from flask import Blueprint, jsonify, request
+from flask_jwt_extended import jwt_required
+from sqlalchemy.exc import IntegrityError
+from sqlalchemy import case, func
+
 from app import db, limiter
 from app.models.Attendees import Attendees
 from app.utils.extensions import generate_QR
-from sqlalchemy.exc import IntegrityError
-from sqlalchemy import case, func
-from flask_jwt_extended import jwt_required
-import logging
+from app.services.email.tasks import trigger_registration_confirmation_async
 
 
 logger = logging.getLogger(__name__)
 attendees_bp = Blueprint("attendees", __name__)
 
 
-# api/v1/attendees/register
 @attendees_bp.route("/register", methods=["POST"])
 @limiter.limit('20 per minute')
 def attendee_register_endpoint():
     data = request.get_json() or {}
 
     # 1. Base validation for EVERYone
-    base_required = ['fullname', 'phone']
+    base_required = ['fullname', 'phone', 'email']
     if not all(data.get(field) for field in base_required):
         return jsonify({
             "status": "ERROR",
-            "message": "Missing required fields: fullname and phone are mandatory",
+            "message": "Missing required fields: fullname, email and phone are mandatory",
             "code": 400
         }), 400
 
-    # 2. Extract and clean phone configuration
+    # 2. Extract and clean fields
+    fullname = str(data.get('fullname', '')).strip()
+    email = str(data.get('email', '')).strip().lower()
     phone = str(data.get('phone', '')).strip()
+    
+    # Validate email
+    if not email or '@' not in email:
+        return jsonify({
+            "status": "ERROR",
+            "message": "Valid email address is required",
+            "code": 400
+        }), 400
+    
+    # Validate phone
     if not phone.isdigit() or len(phone) != 11:
         return jsonify({
             "status": "ERROR",
@@ -38,7 +51,7 @@ def attendee_register_endpoint():
             "code": 400
         }), 400
 
-    # 3. FIXED: Conditional validation based on visitor status
+    # 3. Conditional validation based on visitor status
     is_visitor = bool(data.get('is_visitor', False))
 
     if not is_visitor:
@@ -57,18 +70,20 @@ def attendee_register_endpoint():
     # 5. Build record based on sanitized data inputs
     if is_visitor:
         new_attendee = Attendees(
-            fullname=data['fullname'].strip(),
+            fullname=fullname,
             phone=phone,
+            email=email,  # ✅ FIXED: Email is set
             qrcode=qr_code_string,
             is_visitor=True
         )
     else:
         new_attendee = Attendees(
-            fullname=data['fullname'].strip(),
+            fullname=fullname,
             phone=phone,
-            faculty=data['faculty'].strip(),
-            department=data['department'].strip(),
-            level=str(data['level']).strip(),
+            email=email,  # ✅ FIXED: Email is set (THIS WAS THE BUG)
+            faculty=str(data.get('faculty', '')).strip(),
+            department=str(data.get('department', '')).strip(),
+            level=str(data.get('level', '')).strip(),
             qrcode=qr_code_string,
             is_visitor=False
         )
@@ -77,6 +92,13 @@ def attendee_register_endpoint():
         db.session.add(new_attendee)
         db.session.commit()
 
+        # Send email asynchronously
+        trigger_registration_confirmation_async(
+            to_email=email,
+            fullname=fullname,
+            qrcode=qr_code_string
+        )
+        
         return jsonify({
             "status": "SUCCESS",
             "attendee": new_attendee.to_dict(),
@@ -86,22 +108,25 @@ def attendee_register_endpoint():
 
     except IntegrityError as e:
         db.session.rollback()
-        # Check if the unique constraint failed for phone or QR code
         err_msg = str(e.orig)
+        
+        # Check for duplicate qrcode
         if "qrcode" in err_msg:
-            message = "System generated a duplicate ticket code. Please try again."
+            return jsonify({
+                "status": "ERROR",
+                "message": "System generated a duplicate ticket code. Please try again.",
+                "code": 409
+            }), 409
         else:
-            message = "A record duplicate conflict occurred."
-
-        return jsonify({
-            "status": "ERROR",
-            "message": message,
-            "code": 409
-        }), 409
+            logger.error(f"IntegrityError during registration: {err_msg}")
+            return jsonify({
+                "status": "ERROR",
+                "message": "A record duplicate conflict occurred.",
+                "code": 409
+            }), 409
 
     except Exception as e:
         db.session.rollback()
-        # Log the actual raw error on your Kubuntu server logs securely
         logger.error(f"Registration crash: {str(e)}", exc_info=True)
         return jsonify({
             "status": "ERROR",
@@ -162,7 +187,7 @@ def confirm_attendee_endpoint():
         }), 400
 
     attendee = db.session.execute(
-        db.select(Attendees).where(Attendees.qrcode == data['qrcode'].strip())
+        db.select(Attendees).where(Attendees.qrcode == str(data['qrcode']).strip())
     ).scalar_one_or_none()
 
     if attendee is None:

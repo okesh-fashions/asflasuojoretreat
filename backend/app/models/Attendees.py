@@ -20,6 +20,7 @@ class Attendees(db.Model):
     )
     fullname = db.Column(db.String(100), nullable=False)
     phone = db.Column(db.String(11), nullable=False)
+    email = db.Column(db.String(100), nullable=False)
     faculty = db.Column(db.String(120), nullable=True)
     department = db.Column(db.String(120), nullable=True)
     level = db.Column(db.String(3), nullable=True)
@@ -40,6 +41,7 @@ class Attendees(db.Model):
             "id": str(self.id),
             "fullname": self.fullname,
             "phone": self.phone,
+            "email": self.email,
             "faculty": self.faculty if self.faculty else None,
             "department": self.department if self.department else None,
             "level": self.level if self.level else None,

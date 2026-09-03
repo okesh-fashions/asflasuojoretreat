@@ -1,8 +1,8 @@
-"""created root tables
+"""Initial creation and added email for qr code
 
-Revision ID: 7792a477bcae
+Revision ID: 887bea3449c3
 Revises: 
-Create Date: 2026-08-03 21:51:16.413613
+Create Date: 2026-09-02 22:07:23.962211
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = '7792a477bcae'
+revision = '887bea3449c3'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -30,16 +30,18 @@ def upgrade():
     sa.UniqueConstraint('id')
     )
     op.create_table('attendees',
-    sa.Column('id', sa.UUID(), nullable=False),
+    sa.Column('id', sa.UUID(), server_default=sa.text('gen_random_uuid()'), nullable=False),
     sa.Column('fullname', sa.String(length=100), nullable=False),
     sa.Column('phone', sa.String(length=11), nullable=False),
-    sa.Column('faculty', sa.String(length=120), nullable=False),
-    sa.Column('department', sa.String(length=120), nullable=False),
-    sa.Column('level', sa.String(length=120), nullable=False),
-    sa.Column('qrcode', sa.String(length=120), nullable=False),
+    sa.Column('email', sa.String(length=100), nullable=False),
+    sa.Column('faculty', sa.String(length=120), nullable=True),
+    sa.Column('department', sa.String(length=120), nullable=True),
+    sa.Column('level', sa.String(length=3), nullable=True),
+    sa.Column('qrcode', sa.String(length=12), nullable=False),
+    sa.Column('is_visitor', sa.Boolean(), nullable=False),
     sa.Column('is_confirmed', sa.Boolean(), nullable=False),
     sa.Column('registered_on', sa.DateTime(timezone=True), server_default=sa.text("TIMEZONE('Africa/Lagos', NOW())"), nullable=True),
-    sa.Column('confirmed_on', sa.DateTime(timezone=True), server_default=sa.text("TIMEZONE('Africa/Lagos', NOW())"), nullable=True),
+    sa.Column('confirmed_on', sa.DateTime(timezone=True), nullable=True),
     sa.PrimaryKeyConstraint('id'),
     sa.UniqueConstraint('id')
     )
