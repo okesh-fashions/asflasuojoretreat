@@ -68,6 +68,10 @@ export function AuthPage() {
   });
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<FilterStatus>("all");
+  const [isQrScanning, setIsQrScanning] = useState(false);
+  const [qrVerificationStep, setQrVerificationStep] = useState<"scanning" | "verifying" | "success">("scanning");
+  const [showQrSuccess, setShowQrSuccess] = useState(false);
+  const [scannedAttendee, setScannedAttendee] = useState<AttendeeRecord | null>(null);
 
   const loadDashboard = async () => {
     setIsLoading(true);
@@ -163,6 +167,79 @@ export function AuthPage() {
     // The QR scanner already handled the confirmation
     // We just need to reload the dashboard to reflect changes
     await loadDashboard();
+  };
+
+  // Handle QR scan - this is where the confirmation happens
+  const handleQrScan = async (qrString: string) => {
+    setQrVerificationStep("verifying");
+
+    try {
+      // Add a small delay to ensure the QR code is properly processed
+      await new Promise(resolve => setTimeout(resolve, 300));
+
+      // Confirm the attendee
+      const response = await api.post("/attendees/confirm", {
+        qrcode: qrString
+      });
+
+      const data = response.data;
+
+      if (data.attendee) {
+        const attendee = data.attendee;
+
+        // Check if already confirmed
+        if (attendee.is_confirmed) {
+          setQrVerificationStep("scanning");
+          setIsQrScanning(false);
+          toast("This attendee has already been confirmed.", { icon: "⚠️" });
+          return;
+        }
+
+        // Show success with attendee info
+        setScannedAttendee(attendee);
+        setShowQrSuccess(true);
+        setQrVerificationStep("success");
+        toast.success("Attendance confirmed successfully!");
+
+        // Reload dashboard to reflect changes
+        await loadDashboard();
+      } else {
+        setQrVerificationStep("scanning");
+        setIsQrScanning(false);
+        toast.error("Attendee not found. Please check the QR code.");
+      }
+    } catch (error: any) {
+      console.error("QR verification failed:", error);
+
+      // Handle different error scenarios
+      if (error.response?.status === 404) {
+        toast.error("Attendee not found. Please check the QR code.");
+      } else if (error.response?.status === 400) {
+        const msg = error.response.data?.message || "Invalid QR code.";
+        toast.error(msg);
+      } else if (error.response?.data?.message) {
+        toast.error(error.response.data.message);
+      } else if (error.code === "ERR_NETWORK") {
+        toast.error("Network error. Please check your connection.");
+      } else {
+        toast.error("Failed to confirm attendance. Please try again.");
+      }
+
+      setQrVerificationStep("scanning");
+      setIsQrScanning(false);
+    }
+  };
+
+  const closeQrScanner = () => {
+    setIsQrScanning(false);
+    setQrVerificationStep("scanning");
+  };
+
+  const closeQrSuccess = () => {
+    setShowQrSuccess(false);
+    setScannedAttendee(null);
+    setQrVerificationStep("scanning");
+    setIsQrScanning(false);
   };
 
   const exportTableToExcel = () => {
@@ -565,7 +642,7 @@ export function AuthPage() {
             ))}
           </section>
 
-          {/* QR Scanner - Full width above attendance manager */}
+          {/* QR Scanner Section */}
           <section className="rounded-2xl bg-white/70 p-4 shadow-[0_2px_16px_rgba(0,0,0,0.06)] backdrop-blur-[12px] sm:p-6">
             <div className="mb-2">
               <p className="text-[11px] font-semibold uppercase tracking-[0.25em] text-[#5b1e2e]/60">
@@ -575,7 +652,19 @@ export function AuthPage() {
                 Confirm Attendee by QR
               </h3>
             </div>
-            <QrCodeScanner onScan={handleConfirmAttendee} />
+            <QrCodeScanner
+              onScan={handleQrScan}
+              isScanning={isQrScanning}
+              onClose={closeQrScanner}
+              verificationStep={qrVerificationStep}
+            />
+            <button
+              type="button"
+              onClick={() => setIsQrScanning(true)}
+              className="mt-3 w-full rounded-xl bg-[#5b1e2e] px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-[#5b1e2e]/20 transition hover:bg-[#431724] active:scale-[0.98]"
+            >
+              Open QR Scanner
+            </button>
           </section>
 
           {/* Attendance Manager */}
@@ -741,6 +830,70 @@ export function AuthPage() {
           </section>
         </main>
       </div>
+
+      {/* QR Success Modal */}
+      {showQrSuccess && scannedAttendee && (
+        <div
+          className="fixed inset-0 z-[9999] flex items-center justify-center bg-[#220b13]/90 p-4 backdrop-blur-md"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              closeQrSuccess();
+            }
+          }}
+        >
+          <div className="relative w-full max-w-md overflow-hidden rounded-2xl bg-white shadow-2xl animate-in fade-in zoom-in duration-300">
+            {/* Success Animation */}
+            <div className="relative bg-gradient-to-br from-[#5b1e2e] to-[#7c2a3a] px-6 py-8 text-center text-white">
+              <div className="absolute inset-0 bg-[url('data:image/svg+xml,%3Csvg_width=\'60\'_height=\'60\'_viewBox=\'0_0_60_60\'_xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cg_fill=\'none\'_fill-rule=\'evenodd\'%3E%3Cg_fill=\'%23ffffff\'_fill-opacity=\'0.05\'%3E%3Cpath_d=\'M36_34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6_34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6_4V0H4v4H0v2h4v4h2V6h4V4H6z\'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E')] opacity-20" />
+
+              <div className="relative">
+                <div className="mx-auto mb-4 flex h-24 w-24 items-center justify-center rounded-full bg-white/20 animate-in fade-in zoom-in duration-500">
+                  <div className="flex h-20 w-20 items-center justify-center rounded-full bg-white animate-in fade-in zoom-in duration-700">
+                    <CheckCircle2 className="h-12 w-12 text-[#5b1e2e] animate-in fade-in zoom-in duration-1000" />
+                  </div>
+                </div>
+
+                <h3 className="text-2xl font-bold animate-in fade-in slide-in-from-top-4 duration-500">
+                  ✓ Verified!
+                </h3>
+                <p className="mt-1 text-sm text-white/80 animate-in fade-in slide-in-from-top-4 duration-700">
+                  Attendance confirmed successfully
+                </p>
+              </div>
+            </div>
+
+            {/* Attendee Info */}
+            <div className="p-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+              <div className="flex items-start gap-3 rounded-xl bg-[#f8ecee] p-4">
+                <div className="rounded-full bg-[#5b1e2e]/10 p-2.5 text-[#5b1e2e]">
+                  <User className="h-5 w-5" />
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-[#4d2a35]">Attendee</p>
+                  <h4 className="text-xl font-bold text-[#220b13]">
+                    {scannedAttendee.fullname}
+                  </h4>
+                  <div className="mt-1.5 space-y-0.5 text-sm text-[#4d2a35]">
+                    <p>📱 {scannedAttendee.phone}</p>
+                    {scannedAttendee.faculty && <p>🎓 {scannedAttendee.faculty}</p>}
+                    {scannedAttendee.department && (
+                      <p>📚 {scannedAttendee.department}</p>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={closeQrSuccess}
+                className="mt-4 w-full rounded-xl bg-[#5b1e2e] px-4 py-3.5 text-base font-semibold text-white transition hover:bg-[#431724] active:scale-[0.98]"
+              >
+                Done
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

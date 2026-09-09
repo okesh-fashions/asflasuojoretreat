@@ -1,34 +1,28 @@
 // src/components/QrcodeComponent.tsx
 import { useEffect, useRef, useState } from "react";
 import { Html5Qrcode } from "html5-qrcode";
-import { CheckCircle2, Loader2, QrCode, Sparkles, X, User, AlertCircle } from "lucide-react";
-import api from "../utils/axiosConfig";
-import toast from "react-hot-toast";
+import { Loader2, QrCode, Sparkles, X } from "lucide-react";
 
 interface QrCodeScannerProps {
   onScan?: (qrString: string) => Promise<void> | void;
+  isScanning?: boolean;
+  onClose?: () => void;
+  verificationStep?: "scanning" | "verifying" | "success";
 }
 
-interface AttendeeInfo {
-  fullname: string;
-  phone: string;
-  faculty?: string | null;
-  department?: string | null;
-  is_confirmed: boolean;
-}
-
-export function QrCodeScanner({ onScan }: QrCodeScannerProps) {
-  const [isScanning, setIsScanning] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [scannerStatus, setScannerStatus] = useState("");
-  const [statusType, setStatusType] = useState<"info" | "success" | "error" | "warning">("info");
-  const [showSuccessModal, setShowSuccessModal] = useState(false);
-  const [attendeeInfo, setAttendeeInfo] = useState<AttendeeInfo | null>(null);
-  const [verificationStep, setVerificationStep] = useState<
-    "scanning" | "verifying" | "success"
-  >("scanning");
+export function QrCodeScanner({
+  onScan,
+  isScanning: externalIsScanning,
+  onClose,
+  verificationStep: externalVerificationStep
+}: QrCodeScannerProps) {
+  const [internalIsScanning, setInternalIsScanning] = useState(false);
+  const [internalVerificationStep, setInternalVerificationStep] = useState<"scanning" | "verifying" | "success">("scanning");
   const qrScannerRef = useRef<Html5Qrcode | null>(null);
   const readerContainerRef = useRef<HTMLDivElement | null>(null);
+
+  const isScanning = externalIsScanning !== undefined ? externalIsScanning : internalIsScanning;
+  const verificationStep = externalVerificationStep || internalVerificationStep;
 
   useEffect(() => {
     return () => {
@@ -53,12 +47,10 @@ export function QrCodeScanner({ onScan }: QrCodeScannerProps) {
   }, [isScanning]);
 
   const startScanner = async () => {
-    if (isScanning || isSubmitting) return;
+    if (isScanning) return;
 
-    setIsScanning(true);
-    setScannerStatus("Opening camera…");
-    setStatusType("info");
-    setVerificationStep("scanning");
+    setInternalIsScanning(true);
+    setInternalVerificationStep("scanning");
 
     await new Promise((resolve) => setTimeout(resolve, 150));
 
@@ -82,107 +74,29 @@ export function QrCodeScanner({ onScan }: QrCodeScannerProps) {
         },
         async (decodedText) => {
           // QR detected - start verification
-          setVerificationStep("verifying");
-          setScannerStatus("Verifying attendee...");
-          setStatusType("info");
-          setIsSubmitting(true);
+          setInternalVerificationStep("verifying");
 
           try {
             // Stop scanning immediately
             await html5QrCode.stop();
-            setIsScanning(false);
+            setInternalIsScanning(false);
 
-            // IMPORTANT: Add a small delay to ensure the QR code is properly processed
-            await new Promise(resolve => setTimeout(resolve, 300));
-
-            // UNIFIED: Use the confirm endpoint directly
-            const response = await api.post("/attendees/confirm", {
-              qrcode: decodedText
-            });
-
-            const data = response.data;
-
-            if (data.attendee) {
-              const attendee = data.attendee;
-
-              // Check if already confirmed
-              if (attendee.is_confirmed) {
-                setScannerStatus("⚠️ This attendee has already been confirmed.");
-                setStatusType("warning");
-                setIsSubmitting(false);
-                setVerificationStep("scanning");
-                toast("Attendee already confirmed.", { icon: "⚠️" });
-                return;
-              }
-
-              // Show success with attendee info
-              setAttendeeInfo({
-                fullname: attendee.fullname,
-                phone: attendee.phone,
-                faculty: attendee.faculty,
-                department: attendee.department,
-                is_confirmed: attendee.is_confirmed,
-              });
-
-              setVerificationStep("success");
-              setShowSuccessModal(true);
-              setScannerStatus("");
-              toast.success("Attendance confirmed successfully!");
-
-              // Call onScan callback if provided
-              if (onScan) {
-                await onScan(decodedText);
-              }
-            } else {
-              setScannerStatus("❌ Attendee not found. Please check the QR code.");
-              setStatusType("error");
-              setVerificationStep("scanning");
-              toast.error("Attendee not found.");
+            // Call the onScan callback with the decoded text
+            if (onScan) {
+              await onScan(decodedText);
             }
-          } catch (error: any) {
-            console.error("QR verification failed:", error);
-
-            // Handle different error scenarios
-            if (error.response?.status === 404) {
-              setScannerStatus("❌ Attendee not found. Please check the QR code.");
-              setStatusType("error");
-              toast.error("Attendee not found.");
-            } else if (error.response?.status === 400) {
-              const msg = error.response.data?.message || "Invalid QR code.";
-              setScannerStatus(`❌ ${msg}`);
-              setStatusType("error");
-              toast.error(msg);
-            } else if (error.response?.data?.message) {
-              const msg = error.response.data.message;
-              setScannerStatus(`❌ ${msg}`);
-              setStatusType("error");
-              toast.error(msg);
-            } else if (error.code === "ERR_NETWORK") {
-              setScannerStatus("❌ Network error. Please check your connection.");
-              setStatusType("error");
-              toast.error("Network error. Please try again.");
-            } else {
-              setScannerStatus("❌ Something went wrong. Please try again.");
-              setStatusType("error");
-              toast.error("Failed to confirm attendance.");
-            }
-            setVerificationStep("scanning");
-          } finally {
-            setIsSubmitting(false);
+          } catch (error) {
+            console.error("QR processing failed:", error);
+            setInternalIsScanning(false);
+            setInternalVerificationStep("scanning");
           }
         },
         () => {},
       );
-
-      setScannerStatus("Align the QR code within the frame.");
-      setStatusType("info");
     } catch (error) {
       console.error("Camera startup failed:", error);
-      setScannerStatus("❌ Camera access was blocked or unavailable.");
-      setStatusType("error");
-      setIsScanning(false);
-      setVerificationStep("scanning");
-      toast.error("Camera access was blocked.");
+      setInternalIsScanning(false);
+      setInternalVerificationStep("scanning");
     }
   };
 
@@ -190,60 +104,32 @@ export function QrCodeScanner({ onScan }: QrCodeScannerProps) {
     if (qrScannerRef.current?.isScanning) {
       await qrScannerRef.current.stop();
     }
-    setIsScanning(false);
-    setScannerStatus("");
-    setStatusType("info");
-    setVerificationStep("scanning");
-    setShowSuccessModal(false);
-    setAttendeeInfo(null);
-  };
-
-  const handleSuccessClose = () => {
-    setShowSuccessModal(false);
-    setAttendeeInfo(null);
-    setVerificationStep("scanning");
-  };
-
-  // Get status color based on type
-  const getStatusColor = () => {
-    switch (statusType) {
-      case "success": return "text-green-600";
-      case "error": return "text-red-600";
-      case "warning": return "text-amber-600";
-      default: return "text-[#4a2a35]";
+    setInternalIsScanning(false);
+    setInternalVerificationStep("scanning");
+    if (onClose) {
+      onClose();
     }
   };
 
-  // Get status icon
-  const getStatusIcon = () => {
-    switch (statusType) {
-      case "success": return <CheckCircle2 className="h-4 w-4 text-green-600" />;
-      case "error": return <AlertCircle className="h-4 w-4 text-red-600" />;
-      case "warning": return <AlertCircle className="h-4 w-4 text-amber-600" />;
-      default: return null;
+  // If external control is being used, start scanning when isScanning becomes true
+  useEffect(() => {
+    if (externalIsScanning === true && !qrScannerRef.current?.isScanning) {
+      startScanner();
     }
-  };
+  }, [externalIsScanning]);
 
   return (
     <>
       <button
         type="button"
         onClick={startScanner}
-        disabled={isScanning || isSubmitting}
+        disabled={isScanning}
         className="inline-flex w-full items-center justify-center gap-3 rounded-xl bg-[#5b1e2e] px-6 py-3.5 text-base font-semibold text-white shadow-lg shadow-[#5b1e2e]/20 transition hover:bg-[#431724] hover:shadow-xl active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-70"
       >
         <QrCode className="h-5 w-5" />
         <span>Scan QR Code to Confirm Attendance</span>
         <Sparkles className="h-4 w-4" />
       </button>
-
-      {/* Status message below button */}
-      {scannerStatus && !isScanning && !showSuccessModal && (
-        <div className={`mt-3 flex items-center justify-center gap-2 text-center text-sm font-medium ${getStatusColor()}`}>
-          {getStatusIcon()}
-          <span>{scannerStatus}</span>
-        </div>
-      )}
 
       {/* Scanner Modal - Overlays everything */}
       {isScanning && (
@@ -293,71 +179,6 @@ export function QrCodeScanner({ onScan }: QrCodeScannerProps) {
                   ? "Hold steady until the code is detected"
                   : "Processing..."}
               </p>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Success Modal with Animation */}
-      {showSuccessModal && attendeeInfo && (
-        <div
-          className="fixed inset-0 z-[9999] flex items-center justify-center bg-[#220b13]/90 p-4 backdrop-blur-md"
-          onClick={(e) => {
-            if (e.target === e.currentTarget) {
-              handleSuccessClose();
-            }
-          }}
-        >
-          <div className="relative w-full max-w-md overflow-hidden rounded-2xl bg-white shadow-2xl animate-in fade-in zoom-in duration-300">
-            {/* Success Animation */}
-            <div className="relative bg-gradient-to-br from-[#5b1e2e] to-[#7c2a3a] px-6 py-8 text-center text-white">
-              <div className="absolute inset-0 bg-[url('data:image/svg+xml,%3Csvg_width=\'60\'_height=\'60\'_viewBox=\'0_0_60_60\'_xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cg_fill=\'none\'_fill-rule=\'evenodd\'%3E%3Cg_fill=\'%23ffffff\'_fill-opacity=\'0.05\'%3E%3Cpath_d=\'M36_34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6_34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6_4V0H4v4H0v2h4v4h2V6h4V4H6z\'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E')] opacity-20" />
-
-              <div className="relative">
-                {/* Animated Check Circle */}
-                <div className="mx-auto mb-4 flex h-24 w-24 items-center justify-center rounded-full bg-white/20 animate-in fade-in zoom-in duration-500">
-                  <div className="flex h-20 w-20 items-center justify-center rounded-full bg-white animate-in fade-in zoom-in duration-700">
-                    <CheckCircle2 className="h-12 w-12 text-[#5b1e2e] animate-in fade-in zoom-in duration-1000" />
-                  </div>
-                </div>
-
-                <h3 className="text-2xl font-bold animate-in fade-in slide-in-from-top-4 duration-500">
-                  ✓ Verified!
-                </h3>
-                <p className="mt-1 text-sm text-white/80 animate-in fade-in slide-in-from-top-4 duration-700">
-                  Attendance confirmed successfully
-                </p>
-              </div>
-            </div>
-
-            {/* Attendee Info */}
-            <div className="p-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-              <div className="flex items-start gap-3 rounded-xl bg-[#f8ecee] p-4">
-                <div className="rounded-full bg-[#5b1e2e]/10 p-2.5 text-[#5b1e2e]">
-                  <User className="h-5 w-5" />
-                </div>
-                <div className="flex-1">
-                  <p className="text-sm font-medium text-[#4d2a35]">Attendee</p>
-                  <h4 className="text-xl font-bold text-[#220b13]">
-                    {attendeeInfo.fullname}
-                  </h4>
-                  <div className="mt-1.5 space-y-0.5 text-sm text-[#4d2a35]">
-                    <p>📱 {attendeeInfo.phone}</p>
-                    {attendeeInfo.faculty && <p>🎓 {attendeeInfo.faculty}</p>}
-                    {attendeeInfo.department && (
-                      <p>📚 {attendeeInfo.department}</p>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              <button
-                type="button"
-                onClick={handleSuccessClose}
-                className="mt-4 w-full rounded-xl bg-[#5b1e2e] px-4 py-3.5 text-base font-semibold text-white transition hover:bg-[#431724] active:scale-[0.98]"
-              >
-                Done
-              </button>
             </div>
           </div>
         </div>
