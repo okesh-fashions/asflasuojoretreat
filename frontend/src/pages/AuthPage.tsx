@@ -69,10 +69,6 @@ export function AuthPage() {
   });
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<FilterStatus>("all");
-  const [isQrScanning, setIsQrScanning] = useState(false);
-  const [qrVerificationStep, setQrVerificationStep] = useState<"scanning" | "verifying" | "success">("scanning");
-  const [showQrSuccess, setShowQrSuccess] = useState(false);
-  const [scannedAttendee, setScannedAttendee] = useState<AttendeeRecord | null>(null);
 
   const loadDashboard = async () => {
     setIsLoading(true);
@@ -166,8 +162,6 @@ export function AuthPage() {
 
   // Handle QR scan - this is where the confirmation happens
   const handleQrScan = async (qrString: string) => {
-    setQrVerificationStep("verifying");
-
     try {
       // Add a small delay to ensure the QR code is properly processed
       await new Promise(resolve => setTimeout(resolve, 300));
@@ -184,23 +178,15 @@ export function AuthPage() {
 
         // Check if already confirmed
         if (attendee.is_confirmed) {
-          setQrVerificationStep("scanning");
-          setIsQrScanning(false);
           toast("This attendee has already been confirmed.", { icon: "⚠️" });
           return;
         }
 
-        // Show success with attendee info
-        setScannedAttendee(attendee);
-        setShowQrSuccess(true);
-        setQrVerificationStep("success");
-        toast.success("Attendance confirmed successfully!");
+        toast.success(`✅ ${attendee.fullname} confirmed successfully!`);
 
         // Reload dashboard to reflect changes
         await loadDashboard();
       } else {
-        setQrVerificationStep("scanning");
-        setIsQrScanning(false);
         toast.error("Attendee not found. Please check the QR code.");
       }
     } catch (error: any) {
@@ -219,9 +205,6 @@ export function AuthPage() {
       } else {
         toast.error("Failed to confirm attendance. Please try again.");
       }
-
-      setQrVerificationStep("scanning");
-      setIsQrScanning(false);
     }
   };
 
@@ -649,17 +632,7 @@ export function AuthPage() {
             </div>
             <QrCodeScanner
               onScan={handleQrScan}
-              isScanning={isQrScanning}
-              onClose={closeQrScanner}
-              verificationStep={qrVerificationStep}
             />
-            <button
-              type="button"
-              onClick={() => setIsQrScanning(true)}
-              className="mt-3 w-full rounded-xl bg-[#5b1e2e] px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-[#5b1e2e]/20 transition hover:bg-[#431724] active:scale-[0.98]"
-            >
-              Open QR Scanner
-            </button>
           </section>
 
           {/* Attendance Manager */}
