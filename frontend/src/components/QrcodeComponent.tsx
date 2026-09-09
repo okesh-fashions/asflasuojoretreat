@@ -5,24 +5,12 @@ import { Loader2, QrCode, Sparkles, X } from "lucide-react";
 
 interface QrCodeScannerProps {
   onScan?: (qrString: string) => Promise<void> | void;
-  isScanning?: boolean;
-  onClose?: () => void;
-  verificationStep?: "scanning" | "verifying" | "success";
 }
 
-export function QrCodeScanner({
-  onScan,
-  isScanning: externalIsScanning,
-  onClose,
-  verificationStep: externalVerificationStep
-}: QrCodeScannerProps) {
-  const [internalIsScanning, setInternalIsScanning] = useState(false);
-  const [internalVerificationStep, setInternalVerificationStep] = useState<"scanning" | "verifying" | "success">("scanning");
+export function QrCodeScanner({ onScan }: QrCodeScannerProps) {
+  const [isScanning, setIsScanning] = useState(false);
+  const [isVerifying, setIsVerifying] = useState(false);
   const qrScannerRef = useRef<Html5Qrcode | null>(null);
-  const readerContainerRef = useRef<HTMLDivElement | null>(null);
-
-  const isScanning = externalIsScanning !== undefined ? externalIsScanning : internalIsScanning;
-  const verificationStep = externalVerificationStep || internalVerificationStep;
 
   useEffect(() => {
     return () => {
@@ -32,25 +20,11 @@ export function QrCodeScanner({
     };
   }, []);
 
-  // Force the internal video stream to stay inside the modal
-  useEffect(() => {
-    if (isScanning && readerContainerRef.current) {
-      const videoElement = readerContainerRef.current.querySelector("video");
-      if (videoElement) {
-        videoElement.style.position = "relative";
-        videoElement.style.zIndex = "1";
-        videoElement.style.width = "100%";
-        videoElement.style.height = "100%";
-        videoElement.style.objectFit = "cover";
-      }
-    }
-  }, [isScanning]);
-
   const startScanner = async () => {
     if (isScanning) return;
 
-    setInternalIsScanning(true);
-    setInternalVerificationStep("scanning");
+    setIsScanning(true);
+    setIsVerifying(false);
 
     await new Promise((resolve) => setTimeout(resolve, 150));
 
@@ -74,12 +48,12 @@ export function QrCodeScanner({
         },
         async (decodedText) => {
           // QR detected - start verification
-          setInternalVerificationStep("verifying");
+          setIsVerifying(true);
 
           try {
             // Stop scanning immediately
             await html5QrCode.stop();
-            setInternalIsScanning(false);
+            setIsScanning(false);
 
             // Call the onScan callback with the decoded text
             if (onScan) {
@@ -87,16 +61,18 @@ export function QrCodeScanner({
             }
           } catch (error) {
             console.error("QR processing failed:", error);
-            setInternalIsScanning(false);
-            setInternalVerificationStep("scanning");
+            setIsScanning(false);
+            setIsVerifying(false);
+          } finally {
+            setIsVerifying(false);
           }
         },
         () => {},
       );
     } catch (error) {
       console.error("Camera startup failed:", error);
-      setInternalIsScanning(false);
-      setInternalVerificationStep("scanning");
+      setIsScanning(false);
+      setIsVerifying(false);
     }
   };
 
@@ -104,19 +80,9 @@ export function QrCodeScanner({
     if (qrScannerRef.current?.isScanning) {
       await qrScannerRef.current.stop();
     }
-    setInternalIsScanning(false);
-    setInternalVerificationStep("scanning");
-    if (onClose) {
-      onClose();
-    }
+    setIsScanning(false);
+    setIsVerifying(false);
   };
-
-  // If external control is being used, start scanning when isScanning becomes true
-  useEffect(() => {
-    if (externalIsScanning === true && !qrScannerRef.current?.isScanning) {
-      startScanner();
-    }
-  }, [externalIsScanning]);
 
   return (
     <>
@@ -131,7 +97,7 @@ export function QrCodeScanner({
         <Sparkles className="h-4 w-4" />
       </button>
 
-      {/* Scanner Modal - Overlays everything */}
+      {/* Scanner Modal */}
       {isScanning && (
         <div
           className="fixed inset-0 z-[9999] flex items-center justify-center bg-[#220b13]/90 p-4 backdrop-blur-md"
@@ -157,14 +123,13 @@ export function QrCodeScanner({
             </div>
 
             <div className="p-4">
-              <div className="relative isolate aspect-square w-full min-h-[320px] overflow-hidden rounded-xl bg-slate-950">
+              <div className="relative aspect-square w-full overflow-hidden rounded-xl bg-slate-950">
                 <div
                   id="qr-reader"
-                  ref={readerContainerRef}
-                  className="absolute inset-0 flex h-full w-full items-center justify-center z-10"
+                  className="absolute inset-0 flex items-center justify-center"
                 />
-                {verificationStep === "verifying" && (
-                  <div className="absolute inset-0 z-20 flex items-center justify-center bg-black/70">
+                {isVerifying && (
+                  <div className="absolute inset-0 flex items-center justify-center bg-black/70">
                     <div className="text-center text-white">
                       <Loader2 className="mx-auto h-10 w-10 animate-spin" />
                       <p className="mt-3 text-sm font-medium">
@@ -175,9 +140,7 @@ export function QrCodeScanner({
                 )}
               </div>
               <p className="mt-3 text-center text-xs font-medium text-slate-500">
-                {verificationStep === "scanning"
-                  ? "Hold steady until the code is detected"
-                  : "Processing..."}
+                Hold steady until the code is detected
               </p>
             </div>
           </div>
