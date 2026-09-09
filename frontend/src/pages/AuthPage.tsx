@@ -7,6 +7,7 @@ import {
   Download,
   Eye,
   EyeOff,
+  User,
   LogOut,
   ShieldCheck,
   CalendarDays,
@@ -161,12 +162,6 @@ export function AuthPage() {
 
   const handleLogout = async () => {
     await logout();
-  };
-
-  const handleConfirmAttendee = async () => {
-    // The QR scanner already handled the confirmation
-    // We just need to reload the dashboard to reflect changes
-    await loadDashboard();
   };
 
   // Handle QR scan - this is where the confirmation happens
