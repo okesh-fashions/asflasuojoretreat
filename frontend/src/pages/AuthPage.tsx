@@ -159,7 +159,7 @@ export function AuthPage() {
     await logout();
   };
 
-  const handleConfirmAttendee = async (qrString: string) => {
+  const handleConfirmAttendee = async () => {
     // The QR scanner already handled the confirmation
     // We just need to reload the dashboard to reflect changes
     await loadDashboard();
@@ -508,9 +508,6 @@ export function AuthPage() {
       </div>
     );
   }
-
-  // src/pages/AuthPage.tsx (updated section)
-  // ... keep all imports and code above the return statement the same ...
 
   return (
     <div className="min-h-screen bg-[#f6f0ee] px-4 py-4 text-[#2a0d18] sm:px-6 sm:py-6 lg:px-8">

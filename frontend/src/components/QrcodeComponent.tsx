@@ -104,7 +104,7 @@ export function QrCodeScanner({ onScan }: QrCodeScannerProps) {
                 setScannerStatus("⚠️ This attendee has already been confirmed.");
                 setIsSubmitting(false);
                 setVerificationStep("scanning");
-                toast.info("Attendee already confirmed.");
+                toast("Attendee already confirmed.");
                 return;
               }
 
