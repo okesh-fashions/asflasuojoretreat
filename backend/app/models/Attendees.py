@@ -3,6 +3,7 @@
 from app import db
 from sqlalchemy.dialects.postgresql import UUID
 import uuid
+from zoneinfo import ZoneInfo
 
 
 class Attendees(db.Model):
@@ -37,6 +38,18 @@ class Attendees(db.Model):
     )
 
     def to_dict(self):
+        registered_on_iso = None
+        if self.registered_on:
+            tz = ZoneInfo("Africa/Lagos")
+            registered_on_iso = (self.registered_on if self.registered_on.tzinfo else self.registered_on.replace(
+                tzinfo=tz)).astimezone(tz).isoformat()
+
+        confirmed_on_iso = None
+        if self.confirmed_on:
+            tz = ZoneInfo("Africa/Lagos")
+            confirmed_on_iso = (self.confirmed_on if self.confirmed_on.tzinfo else self.confirmed_on.replace(
+                tzinfo=tz)).astimezone(tz).isoformat()
+
         return {
             "id": str(self.id),
             "fullname": self.fullname,
@@ -48,6 +61,6 @@ class Attendees(db.Model):
             "qrcode": self.qrcode,
             "is_visitor": self.is_visitor,
             "is_confirmed": self.is_confirmed,
-            "registered_on": self.registered_on.isoformat() if self.registered_on else None,
-            "confirmed_on": self.confirmed_on.isoformat() if self.confirmed_on else None
+            "registered_on": registered_on_iso,
+            "confirmed_on": confirmed_on_iso
         }
