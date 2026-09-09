@@ -1,7 +1,7 @@
 // src/components/QrcodeComponent.tsx
 import { useEffect, useRef, useState } from "react";
 import { Html5Qrcode } from "html5-qrcode";
-import { CheckCircle2, Loader2, QrCode, Sparkles, X, User } from "lucide-react";
+import { CheckCircle2, Loader2, QrCode, Sparkles, X, User, AlertCircle } from "lucide-react";
 import api from "../utils/axiosConfig";
 import toast from "react-hot-toast";
 
@@ -21,6 +21,7 @@ export function QrCodeScanner({ onScan }: QrCodeScannerProps) {
   const [isScanning, setIsScanning] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [scannerStatus, setScannerStatus] = useState("");
+  const [statusType, setStatusType] = useState<"info" | "success" | "error" | "warning">("info");
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [attendeeInfo, setAttendeeInfo] = useState<AttendeeInfo | null>(null);
   const [verificationStep, setVerificationStep] = useState<
@@ -56,6 +57,7 @@ export function QrCodeScanner({ onScan }: QrCodeScannerProps) {
 
     setIsScanning(true);
     setScannerStatus("Opening camera…");
+    setStatusType("info");
     setVerificationStep("scanning");
 
     await new Promise((resolve) => setTimeout(resolve, 150));
@@ -82,12 +84,16 @@ export function QrCodeScanner({ onScan }: QrCodeScannerProps) {
           // QR detected - start verification
           setVerificationStep("verifying");
           setScannerStatus("Verifying attendee...");
+          setStatusType("info");
           setIsSubmitting(true);
 
           try {
-            // Stop scanning
+            // Stop scanning immediately
             await html5QrCode.stop();
             setIsScanning(false);
+
+            // IMPORTANT: Add a small delay to ensure the QR code is properly processed
+            await new Promise(resolve => setTimeout(resolve, 300));
 
             // UNIFIED: Use the confirm endpoint directly
             const response = await api.post("/attendees/confirm", {
@@ -102,9 +108,10 @@ export function QrCodeScanner({ onScan }: QrCodeScannerProps) {
               // Check if already confirmed
               if (attendee.is_confirmed) {
                 setScannerStatus("⚠️ This attendee has already been confirmed.");
+                setStatusType("warning");
                 setIsSubmitting(false);
                 setVerificationStep("scanning");
-                toast("Attendee already confirmed.");
+                toast("Attendee already confirmed.", { icon: "⚠️" });
                 return;
               }
 
@@ -128,20 +135,35 @@ export function QrCodeScanner({ onScan }: QrCodeScannerProps) {
               }
             } else {
               setScannerStatus("❌ Attendee not found. Please check the QR code.");
+              setStatusType("error");
               setVerificationStep("scanning");
               toast.error("Attendee not found.");
             }
           } catch (error: any) {
             console.error("QR verification failed:", error);
+
+            // Handle different error scenarios
             if (error.response?.status === 404) {
               setScannerStatus("❌ Attendee not found. Please check the QR code.");
+              setStatusType("error");
               toast.error("Attendee not found.");
+            } else if (error.response?.status === 400) {
+              const msg = error.response.data?.message || "Invalid QR code.";
+              setScannerStatus(`❌ ${msg}`);
+              setStatusType("error");
+              toast.error(msg);
             } else if (error.response?.data?.message) {
               const msg = error.response.data.message;
               setScannerStatus(`❌ ${msg}`);
+              setStatusType("error");
               toast.error(msg);
+            } else if (error.code === "ERR_NETWORK") {
+              setScannerStatus("❌ Network error. Please check your connection.");
+              setStatusType("error");
+              toast.error("Network error. Please try again.");
             } else {
               setScannerStatus("❌ Something went wrong. Please try again.");
+              setStatusType("error");
               toast.error("Failed to confirm attendance.");
             }
             setVerificationStep("scanning");
@@ -153,9 +175,11 @@ export function QrCodeScanner({ onScan }: QrCodeScannerProps) {
       );
 
       setScannerStatus("Align the QR code within the frame.");
+      setStatusType("info");
     } catch (error) {
       console.error("Camera startup failed:", error);
       setScannerStatus("❌ Camera access was blocked or unavailable.");
+      setStatusType("error");
       setIsScanning(false);
       setVerificationStep("scanning");
       toast.error("Camera access was blocked.");
@@ -168,6 +192,7 @@ export function QrCodeScanner({ onScan }: QrCodeScannerProps) {
     }
     setIsScanning(false);
     setScannerStatus("");
+    setStatusType("info");
     setVerificationStep("scanning");
     setShowSuccessModal(false);
     setAttendeeInfo(null);
@@ -177,6 +202,26 @@ export function QrCodeScanner({ onScan }: QrCodeScannerProps) {
     setShowSuccessModal(false);
     setAttendeeInfo(null);
     setVerificationStep("scanning");
+  };
+
+  // Get status color based on type
+  const getStatusColor = () => {
+    switch (statusType) {
+      case "success": return "text-green-600";
+      case "error": return "text-red-600";
+      case "warning": return "text-amber-600";
+      default: return "text-[#4a2a35]";
+    }
+  };
+
+  // Get status icon
+  const getStatusIcon = () => {
+    switch (statusType) {
+      case "success": return <CheckCircle2 className="h-4 w-4 text-green-600" />;
+      case "error": return <AlertCircle className="h-4 w-4 text-red-600" />;
+      case "warning": return <AlertCircle className="h-4 w-4 text-amber-600" />;
+      default: return null;
+    }
   };
 
   return (
@@ -192,9 +237,11 @@ export function QrCodeScanner({ onScan }: QrCodeScannerProps) {
         <Sparkles className="h-4 w-4" />
       </button>
 
+      {/* Status message below button */}
       {scannerStatus && !isScanning && !showSuccessModal && (
-        <div className="mt-3 flex items-center justify-center gap-2 text-center text-sm font-medium text-[#4a2a35]">
-          {scannerStatus}
+        <div className={`mt-3 flex items-center justify-center gap-2 text-center text-sm font-medium ${getStatusColor()}`}>
+          {getStatusIcon()}
+          <span>{scannerStatus}</span>
         </div>
       )}
 
