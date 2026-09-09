@@ -7,7 +7,6 @@ import {
   Download,
   Eye,
   EyeOff,
-  User,
   LogOut,
   ShieldCheck,
   CalendarDays,
