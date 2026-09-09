@@ -163,17 +163,21 @@ export function AuthPage() {
   const handleQrScan = async (qrString: string) => {
     try {
       // Add a small delay to ensure the QR code is properly processed
-      await new Promise(resolve => setTimeout(resolve, 300));
+      await new Promise((resolve) => setTimeout(resolve, 300));
 
       // Confirm the attendee
       const response = await api.post("/attendees/confirm", {
-        qrcode: qrString
+        qrcode: qrString,
       });
 
       const data = response.data;
 
-      if (data.attendee) {
-        const attendee = data.attendee;
+      // Backend returns attendee in data.data, not data.attendee
+      if (data.data) {
+        const attendee = data.data;
+
+        // Show success toast
+        toast.success(`✓ ${attendee.fullname} confirmed!`);
 
         // Reload dashboard to reflect changes
         await loadDashboard();
@@ -186,10 +190,19 @@ export function AuthPage() {
           is_confirmed: attendee.is_confirmed,
         };
       } else {
+        const errorMsg = data.message || "Failed to confirm attendee";
+        toast.error(errorMsg);
         return null;
       }
     } catch (error: any) {
       console.error("QR verification failed:", error);
+
+      // Extract and show detailed error message
+      const errorMsg =
+        error.response?.data?.message ||
+        error.message ||
+        "Failed to verify attendee. Please try again.";
+      toast.error(errorMsg);
 
       // Return null on error - the component will handle error display
       return null;
@@ -280,7 +293,10 @@ export function AuthPage() {
 
   const formatDate = (dateString: string | null) => {
     if (!dateString) return "—";
-    return new Date(dateString).toLocaleDateString("en-NG", {
+    const date = new Date(dateString);
+    // Fix timezone offset by subtracting 1 hour (3600000 ms) to correct UTC+1 issue
+    const correctedDate = new Date(date.getTime() - 3600000);
+    return correctedDate.toLocaleDateString("en-US", {
       day: "2-digit",
       month: "short",
       year: "numeric",
@@ -606,9 +622,7 @@ export function AuthPage() {
                 Confirm Attendee by QR
               </h3>
             </div>
-            <QrCodeScanner
-              onScan={handleQrScan}
-            />
+            <QrCodeScanner onScan={handleQrScan} />
           </section>
 
           {/* Attendance Manager */}
