@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { Html5Qrcode } from "html5-qrcode";
 import { CheckCircle2, Loader2, QrCode, Sparkles, X, User } from "lucide-react";
 import api from "../utils/axiosConfig";
+import toast from "react-hot-toast";
 
 interface QrCodeScannerProps {
   onScan?: (qrString: string) => Promise<void> | void;
@@ -36,10 +37,9 @@ export function QrCodeScanner({ onScan }: QrCodeScannerProps) {
     };
   }, []);
 
-  // CRITICAL FIX: Force the internal video stream to stay inside the modal
+  // Force the internal video stream to stay inside the modal
   useEffect(() => {
     if (isScanning && readerContainerRef.current) {
-      // Force the inner video element to have high z-index and correct position
       const videoElement = readerContainerRef.current.querySelector("video");
       if (videoElement) {
         videoElement.style.position = "relative";
@@ -58,14 +58,12 @@ export function QrCodeScanner({ onScan }: QrCodeScannerProps) {
     setScannerStatus("Opening camera…");
     setVerificationStep("scanning");
 
-    // Allow Modal to render before starting camera
     await new Promise((resolve) => setTimeout(resolve, 150));
 
     try {
       const html5QrCode = new Html5Qrcode("qr-reader");
       qrScannerRef.current = html5QrCode;
 
-      // Get dimensions based on the actual parent container
       const container = document.getElementById("qr-reader");
       const containerWidth = container?.clientWidth || 300;
       const qrboxSize = Math.min(containerWidth - 40, 280);
@@ -81,27 +79,36 @@ export function QrCodeScanner({ onScan }: QrCodeScannerProps) {
           aspectRatio: 1,
         },
         async (decodedText) => {
+          // QR detected - start verification
           setVerificationStep("verifying");
           setScannerStatus("Verifying attendee...");
           setIsSubmitting(true);
 
           try {
+            // Stop scanning
             await html5QrCode.stop();
             setIsScanning(false);
 
-            const response = await api.get(`/attendees/by-qr/${decodedText}`);
+            // UNIFIED: Use the confirm endpoint directly
+            const response = await api.post("/attendees/confirm", {
+              qrcode: decodedText
+            });
+
             const data = response.data;
 
             if (data.attendee) {
               const attendee = data.attendee;
 
+              // Check if already confirmed
               if (attendee.is_confirmed) {
                 setScannerStatus("⚠️ This attendee has already been confirmed.");
                 setIsSubmitting(false);
                 setVerificationStep("scanning");
+                toast.info("Attendee already confirmed.");
                 return;
               }
 
+              // Show success with attendee info
               setAttendeeInfo({
                 fullname: attendee.fullname,
                 phone: attendee.phone,
@@ -113,22 +120,29 @@ export function QrCodeScanner({ onScan }: QrCodeScannerProps) {
               setVerificationStep("success");
               setShowSuccessModal(true);
               setScannerStatus("");
+              toast.success("Attendance confirmed successfully!");
 
+              // Call onScan callback if provided
               if (onScan) {
                 await onScan(decodedText);
               }
             } else {
               setScannerStatus("❌ Attendee not found. Please check the QR code.");
               setVerificationStep("scanning");
+              toast.error("Attendee not found.");
             }
           } catch (error: any) {
             console.error("QR verification failed:", error);
             if (error.response?.status === 404) {
               setScannerStatus("❌ Attendee not found. Please check the QR code.");
+              toast.error("Attendee not found.");
             } else if (error.response?.data?.message) {
-              setScannerStatus(`❌ ${error.response.data.message}`);
+              const msg = error.response.data.message;
+              setScannerStatus(`❌ ${msg}`);
+              toast.error(msg);
             } else {
               setScannerStatus("❌ Something went wrong. Please try again.");
+              toast.error("Failed to confirm attendance.");
             }
             setVerificationStep("scanning");
           } finally {
@@ -144,6 +158,7 @@ export function QrCodeScanner({ onScan }: QrCodeScannerProps) {
       setScannerStatus("❌ Camera access was blocked or unavailable.");
       setIsScanning(false);
       setVerificationStep("scanning");
+      toast.error("Camera access was blocked.");
     }
   };
 
@@ -209,12 +224,6 @@ export function QrCodeScanner({ onScan }: QrCodeScannerProps) {
             </div>
 
             <div className="p-4">
-              {/* 
-                 MAJOR FIX: 
-                 1. min-h-[320px] prevents collapse.
-                 2. Added ref to monitor the video element directly.
-                 3. Added `isolate` CSS class to force a new stacking context.
-              */}
               <div className="relative isolate aspect-square w-full min-h-[320px] overflow-hidden rounded-xl bg-slate-950">
                 <div
                   id="qr-reader"
@@ -242,7 +251,7 @@ export function QrCodeScanner({ onScan }: QrCodeScannerProps) {
         </div>
       )}
 
-      {/* Success Modal - Overlays everything */}
+      {/* Success Modal with Animation */}
       {showSuccessModal && attendeeInfo && (
         <div
           className="fixed inset-0 z-[9999] flex items-center justify-center bg-[#220b13]/90 p-4 backdrop-blur-md"
@@ -258,6 +267,7 @@ export function QrCodeScanner({ onScan }: QrCodeScannerProps) {
               <div className="absolute inset-0 bg-[url('data:image/svg+xml,%3Csvg_width=\'60\'_height=\'60\'_viewBox=\'0_0_60_60\'_xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cg_fill=\'none\'_fill-rule=\'evenodd\'%3E%3Cg_fill=\'%23ffffff\'_fill-opacity=\'0.05\'%3E%3Cpath_d=\'M36_34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6_34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6_4V0H4v4H0v2h4v4h2V6h4V4H6z\'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E')] opacity-20" />
 
               <div className="relative">
+                {/* Animated Check Circle */}
                 <div className="mx-auto mb-4 flex h-24 w-24 items-center justify-center rounded-full bg-white/20 animate-in fade-in zoom-in duration-500">
                   <div className="flex h-20 w-20 items-center justify-center rounded-full bg-white animate-in fade-in zoom-in duration-700">
                     <CheckCircle2 className="h-12 w-12 text-[#5b1e2e] animate-in fade-in zoom-in duration-1000" />

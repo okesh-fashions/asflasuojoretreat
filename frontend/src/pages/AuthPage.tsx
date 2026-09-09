@@ -160,9 +160,9 @@ export function AuthPage() {
   };
 
   const handleConfirmAttendee = async (qrString: string) => {
-    await api.post("/attendees/confirm", { qrcode: qrString });
+    // The QR scanner already handled the confirmation
+    // We just need to reload the dashboard to reflect changes
     await loadDashboard();
-    toast.success("Attendee confirmed successfully.");
   };
 
   const exportTableToExcel = () => {
