@@ -16,7 +16,7 @@ def send_registration_confirmation(to_email: str, fullname: str, qrcode: str) ->
         logger.warning("Email or BRIDGE_URL missing. Skipping email execution.")
         return False
 
-    subject = "🎉 Registration Confirmed - ASF LASU OJO RETREAT"
+    subject = "Registration Confirmed - ASF LASU OJO RETREAT"
     
     payload = {
         "to": to_email,
