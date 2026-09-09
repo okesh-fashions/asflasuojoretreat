@@ -175,35 +175,24 @@ export function AuthPage() {
       if (data.attendee) {
         const attendee = data.attendee;
 
-        // Check if already confirmed
-        if (attendee.is_confirmed) {
-          toast("This attendee has already been confirmed.", { icon: "⚠️" });
-          return;
-        }
-
-        toast.success(`✅ ${attendee.fullname} confirmed successfully!`);
-
         // Reload dashboard to reflect changes
         await loadDashboard();
+
+        // Return attendee data for display in success modal
+        return {
+          fullname: attendee.fullname,
+          phone: attendee.phone,
+          is_visitor: attendee.is_visitor,
+          is_confirmed: attendee.is_confirmed,
+        };
       } else {
-        toast.error("Attendee not found. Please check the QR code.");
+        return null;
       }
     } catch (error: any) {
       console.error("QR verification failed:", error);
 
-      // Handle different error scenarios
-      if (error.response?.status === 404) {
-        toast.error("Attendee not found. Please check the QR code.");
-      } else if (error.response?.status === 400) {
-        const msg = error.response.data?.message || "Invalid QR code.";
-        toast.error(msg);
-      } else if (error.response?.data?.message) {
-        toast.error(error.response.data.message);
-      } else if (error.code === "ERR_NETWORK") {
-        toast.error("Network error. Please check your connection.");
-      } else {
-        toast.error("Failed to confirm attendance. Please try again.");
-      }
+      // Return null on error - the component will handle error display
+      return null;
     }
   };
 
