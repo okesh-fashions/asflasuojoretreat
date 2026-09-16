@@ -96,7 +96,7 @@ const ACCOUNT_DETAILS = {
 };
 
 const FEES = {
-  memberOnline: 950,
+  memberOnline: 800,
   memberCash: 1000,
   invitee: 1000,
 };
