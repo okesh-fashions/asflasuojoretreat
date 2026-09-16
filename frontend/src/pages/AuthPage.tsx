@@ -9,7 +9,6 @@ import {
   EyeOff,
   LogOut,
   ShieldCheck,
-  CalendarDays,
   Phone,
 } from "lucide-react";
 import toast from "react-hot-toast";
