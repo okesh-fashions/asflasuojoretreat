@@ -10,6 +10,7 @@ import {
   LogOut,
   ShieldCheck,
   CalendarDays,
+  Phone,
 } from "lucide-react";
 import toast from "react-hot-toast";
 import * as XLSX from "xlsx";
@@ -210,57 +211,146 @@ export function AuthPage() {
   };
 
   const exportTableToExcel = () => {
-    const rows = attendees.map((attendee) => ({
+    const rows = attendees.map((attendee, index) => ({
+      "S/N": index + 1,
       Name: attendee.fullname,
       Phone: attendee.phone,
       Faculty: attendee.faculty || "Visitor",
       Department: attendee.department || "N/A",
       Level: attendee.level || "N/A",
       Visitor: attendee.is_visitor ? "Yes" : "No",
-      Confirmed: attendee.is_confirmed ? "Yes" : "No",
-      QR: attendee.qrcode,
-      Registered: attendee.registered_on
+      Status: attendee.is_confirmed ? "Confirmed" : "Pending",
+      "Registered On": attendee.registered_on
         ? new Date(attendee.registered_on).toLocaleString("en-NG")
         : "N/A",
+      "QR Code": attendee.qrcode,
     }));
 
     const worksheet = XLSX.utils.json_to_sheet(rows);
+
+    // Set nice column widths so the file opens up readable
+    worksheet["!cols"] = [
+      { wch: 6 }, // S/N
+      { wch: 28 }, // Name
+      { wch: 15 }, // Phone
+      { wch: 30 }, // Faculty
+      { wch: 28 }, // Department
+      { wch: 8 }, // Level
+      { wch: 10 }, // Visitor
+      { wch: 12 }, // Status
+      { wch: 24 }, // Registered On
+      { wch: 20 }, // QR Code
+    ];
+
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "Attendees");
     XLSX.writeFile(workbook, "asf-retreat-attendees.xlsx");
   };
 
   const exportTableToPdf = () => {
-    const doc = new jsPDF();
+    const doc = new jsPDF({
+      orientation: "landscape",
+      unit: "pt",
+      format: "a4",
+    });
+
+    // Title
+    doc.setFontSize(16);
+    doc.setTextColor(91, 30, 46);
+    doc.text("ASF LASU OJO Retreat — Attendees", 40, 40);
+
+    // Subtitle with generated date
+    doc.setFontSize(10);
+    doc.setTextColor(120, 120, 120);
+    doc.text(
+      `Generated: ${new Date().toLocaleString("en-NG")}  •  Total: ${attendees.length}`,
+      40,
+      58,
+    );
+
     autoTable(doc, {
       head: [
         [
+          "S/N",
           "Name",
           "Phone",
           "Faculty",
           "Department",
           "Level",
           "Visitor",
-          "Confirmed",
-          "Registered",
+          "Status",
+          "Registered On",
         ],
       ],
-      body: attendees.map((attendee) => [
+      body: attendees.map((attendee, index) => [
+        index + 1,
         attendee.fullname,
         attendee.phone,
         attendee.faculty || "Visitor",
         attendee.department || "N/A",
         attendee.level || "N/A",
         attendee.is_visitor ? "Yes" : "No",
-        attendee.is_confirmed ? "Yes" : "No",
+        attendee.is_confirmed ? "Confirmed" : "Pending",
         attendee.registered_on
           ? new Date(attendee.registered_on).toLocaleString("en-NG")
           : "N/A",
       ]),
-      startY: 20,
-      styles: { fontSize: 8 },
-      headStyles: { fillColor: [91, 30, 46] },
+      startY: 80,
+      styles: {
+        fontSize: 9,
+        cellPadding: 6,
+        overflow: "linebreak",
+        valign: "middle",
+      },
+      headStyles: {
+        fillColor: [91, 30, 46],
+        textColor: 255,
+        fontStyle: "bold",
+        halign: "left",
+      },
+      alternateRowStyles: {
+        fillColor: [248, 236, 238],
+      },
+      columnStyles: {
+        0: { cellWidth: 30, halign: "center" },
+        1: { cellWidth: 110 },
+        2: { cellWidth: 70 },
+        3: { cellWidth: 100 },
+        4: { cellWidth: 100 },
+        5: { cellWidth: 40, halign: "center" },
+        6: { cellWidth: 45, halign: "center" },
+        7: { cellWidth: 65, halign: "center" },
+        8: { cellWidth: 90 },
+      },
+      margin: { left: 40, right: 40 },
+      didParseCell: (data) => {
+        // Color the Status column
+        if (data.section === "body" && data.column.index === 7) {
+          if (data.cell.raw === "Confirmed") {
+            data.cell.styles.textColor = [22, 101, 52];
+            data.cell.styles.fontStyle = "bold";
+          } else {
+            data.cell.styles.textColor = [146, 64, 14];
+            data.cell.styles.fontStyle = "bold";
+          }
+        }
+      },
     });
+
+    // Footer with page numbers
+    const pageCount = (doc as any).internal.getNumberOfPages();
+    for (let i = 1; i <= pageCount; i++) {
+      doc.setPage(i);
+      doc.setFontSize(8);
+      doc.setTextColor(150, 150, 150);
+      doc.text(
+        `Page ${i} of ${pageCount}  •  ASF LASU OJO Retreat Registration`,
+        doc.internal.pageSize.getWidth() / 2,
+        doc.internal.pageSize.getHeight() - 20,
+        { align: "center" },
+      );
+    }
+
     doc.save("asf-retreat-attendees.pdf");
   };
 
@@ -476,7 +566,7 @@ export function AuthPage() {
                           fullname: event.target.value,
                         }))
                       }
-                      placeholder="Okechukwu Goodluck"
+                      placeholder="Your name"
                       className="w-full rounded-xl border border-[#5b1e2e]/10 bg-white/80 px-4 py-3 text-sm text-[#290d1a] outline-none transition placeholder:text-[#5b1e2e]/40 focus:border-[#5b1e2e]/30 focus:bg-white/90 focus:shadow-[0_0_0_3px_rgba(91,30,46,0.05)]"
                     />
                   </div>
@@ -632,7 +722,7 @@ export function AuthPage() {
                 <p className="text-[11px] font-semibold uppercase tracking-[0.25em] text-[#5b1e2e]/60">
                   Attendance manager
                 </p>
-                <h2 className="text-2xl font-black text-[#220b13]">
+                <h2 className="text-xl font-black text-[#220b13] sm:text-2xl">
                   Registered attendees
                 </h2>
               </div>
@@ -641,73 +731,131 @@ export function AuthPage() {
                 <button
                   type="button"
                   onClick={exportTableToExcel}
-                  className="inline-flex items-center gap-2 rounded-full border border-[#5b1e2e]/10 bg-white/60 px-4 py-2 text-sm font-semibold text-[#2a0d18] transition hover:bg-white/80 active:scale-95"
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-[#5b1e2e]/15 bg-white/70 px-3 py-1.5 text-xs font-semibold text-[#2a0d18] transition hover:bg-white hover:border-[#5b1e2e]/25 active:scale-95 sm:text-sm"
+                  title="Export as Excel spreadsheet"
                 >
-                  <Download className="h-4 w-4" />
-                  Export XLSX
+                  <Download className="h-3.5 w-3.5" />
+                  <span>XLSX</span>
                 </button>
                 <button
                   type="button"
                   onClick={exportTableToPdf}
-                  className="inline-flex items-center gap-2 rounded-full bg-[#5b1e2e] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#431724] active:scale-95"
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-[#5b1e2e] px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-[#431724] active:scale-95 sm:text-sm"
+                  title="Export as PDF document"
                 >
-                  <Download className="h-4 w-4" />
-                  Export PDF
+                  <Download className="h-3.5 w-3.5" />
+                  <span>PDF</span>
                 </button>
               </div>
             </div>
 
             {/* Filters */}
-            <div className="mb-4 flex flex-wrap items-center gap-3">
-              <div className="flex items-center gap-2">
-                <span className="text-sm font-medium text-[#2a0d18]">
-                  Status:
-                </span>
+            <div className="mb-4 flex flex-wrap items-center gap-2">
+              <div className="relative">
                 <select
                   value={statusFilter}
                   onChange={(e) =>
                     setStatusFilter(e.target.value as FilterStatus)
                   }
-                  className="rounded-lg border border-[#5b1e2e]/10 bg-white/80 px-3 py-2 text-sm outline-none focus:border-[#5b1e2e]/30 focus:shadow-[0_0_0_3px_rgba(91,30,46,0.05)]"
+                  className="appearance-none rounded-lg border border-[#5b1e2e]/10 bg-white/80 py-2 pl-3 pr-8 text-sm font-medium text-[#2a0d18] outline-none transition focus:border-[#5b1e2e]/30 focus:bg-white focus:shadow-[0_0_0_3px_rgba(91,30,46,0.05)] cursor-pointer"
                 >
-                  <option value="all">All</option>
+                  <option value="all">All status</option>
                   <option value="confirmed">Confirmed</option>
                   <option value="pending">Pending</option>
                 </select>
+                <svg
+                  className="pointer-events-none absolute right-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[#5b1e2e]/60"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <polyline points="6 9 12 15 18 9" />
+                </svg>
               </div>
 
-              <div className="flex-1 min-w-[200px]">
+              <div className="relative flex-1 min-w-[200px]">
+                <svg
+                  className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[#5b1e2e]/50"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <circle cx="11" cy="11" r="8" />
+                  <path d="m21 21-4.3-4.3" />
+                </svg>
                 <input
                   type="text"
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   placeholder="Search by name, phone, faculty..."
-                  className="w-full rounded-lg border border-[#5b1e2e]/10 bg-white/80 px-4 py-2 text-sm outline-none transition placeholder:text-[#5b1e2e]/40 focus:border-[#5b1e2e]/30 focus:bg-white/90 focus:shadow-[0_0_0_3px_rgba(91,30,46,0.05)]"
+                  className="w-full rounded-lg border border-[#5b1e2e]/10 bg-white/80 py-2 pl-9 pr-3 text-sm text-[#2a0d18] outline-none transition placeholder:text-[#5b1e2e]/40 focus:border-[#5b1e2e]/30 focus:bg-white focus:shadow-[0_0_0_3px_rgba(91,30,46,0.05)]"
                 />
               </div>
+
+              {(statusFilter !== "all" || search) && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setStatusFilter("all");
+                    setSearch("");
+                  }}
+                  className="rounded-lg border border-[#5b1e2e]/10 bg-white/60 px-3 py-2 text-xs font-semibold text-[#5b1e2e] transition hover:bg-white active:scale-95"
+                >
+                  Clear
+                </button>
+              )}
             </div>
 
             <div className="overflow-x-auto">
-              <table className="w-full border-separate border-spacing-y-2 text-sm min-w-[1200px]">
+              <table className="w-full text-sm">
                 <thead>
-                  <tr className="text-left text-xs font-semibold uppercase tracking-[0.22em] text-[#5b1e2e]/60">
-                    <th className="px-4 py-2">S/N</th>
-                    <th className="px-3 py-2">Name</th>
-                    <th className="px-3 py-2">Phone</th>
-                    <th className="px-3 py-2">Faculty</th>
-                    <th className="px-3 py-2">Department</th>
-                    <th className="px-3 py-2">Level</th>
-                    <th className="px-3 py-2">Visitor</th>
-                    <th className="px-3 py-2">Status</th>
-                    <th className="px-3 py-2">Registered On</th>
-                    <th className="px-3 py-2">QR</th>
+                  <tr className="text-left text-[11px] uppercase tracking-wide text-[#5b1e2e]/60 bg-[#5b1e2e]/5">
+                    <th className="px-4 py-3 font-semibold whitespace-nowrap">
+                      S/N
+                    </th>
+                    <th className="px-3 py-3 font-semibold whitespace-nowrap">
+                      Name
+                    </th>
+                    <th className="px-3 py-3 font-semibold whitespace-nowrap">
+                      Phone
+                    </th>
+                    <th className="px-3 py-3 font-semibold whitespace-nowrap">
+                      Faculty
+                    </th>
+                    <th className="px-3 py-3 font-semibold whitespace-nowrap">
+                      Department
+                    </th>
+                    <th className="px-3 py-3 font-semibold whitespace-nowrap">
+                      Level
+                    </th>
+                    <th className="px-3 py-3 font-semibold whitespace-nowrap">
+                      Visitor
+                    </th>
+                    <th className="px-3 py-3 font-semibold whitespace-nowrap">
+                      Status
+                    </th>
+                    <th className="px-3 py-3 font-semibold whitespace-nowrap">
+                      Registered On
+                    </th>
+                    <th className="px-3 py-3 font-semibold whitespace-nowrap">
+                      QR
+                    </th>
+                    <th className="px-3 py-3 font-semibold whitespace-nowrap text-center">
+                      Action
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
                   {isLoading ? (
                     <tr>
                       <td
-                        colSpan={10}
+                        colSpan={11}
                         className="px-4 py-10 text-center text-sm text-[#4d2a35]"
                       >
                         Loading attendees...
@@ -716,7 +864,7 @@ export function AuthPage() {
                   ) : filteredAttendees.length === 0 ? (
                     <tr>
                       <td
-                        colSpan={10}
+                        colSpan={11}
                         className="px-4 py-10 text-center text-sm text-[#4d2a35]"
                       >
                         No attendees match the current filters.
@@ -726,51 +874,70 @@ export function AuthPage() {
                     filteredAttendees.map((attendee, index) => (
                       <tr
                         key={attendee.id}
-                        className="rounded-xl bg-white/60 shadow-sm hover:bg-white/80 transition"
+                        className="border-t border-[#5b1e2e]/10 hover:bg-[#5b1e2e]/[0.03] transition-colors"
                       >
-                        <td className="rounded-l-xl px-4 py-3 font-mono text-sm font-semibold text-[#5b1e2e]/60">
+                        <td className="px-4 py-3 font-mono text-xs font-semibold text-[#5b1e2e]/60">
                           {index + 1}
                         </td>
-                        <td className="px-3 py-3 font-semibold text-[#2a0d18]">
+                        <td className="px-3 py-3 font-semibold text-[#2a0d18] whitespace-nowrap">
                           {attendee.fullname}
                         </td>
-                        <td className="px-3 py-3 text-sm">{attendee.phone}</td>
-                        <td className="px-3 py-3 text-sm">
+                        <td className="px-3 py-3 text-sm text-[#4d2a35] whitespace-nowrap">
+                          {attendee.phone}
+                        </td>
+                        <td className="px-3 py-3 text-sm text-[#4d2a35] whitespace-nowrap">
                           {attendee.faculty || "Visitor"}
                         </td>
-                        <td className="px-3 py-3 text-sm">
+                        <td className="px-3 py-3 text-sm text-[#4d2a35] whitespace-nowrap">
                           {attendee.department || "—"}
                         </td>
-                        <td className="px-3 py-3 text-sm">
+                        <td className="px-3 py-3 text-sm text-[#4d2a35] whitespace-nowrap">
                           {attendee.level || "—"}
                         </td>
-                        <td className="px-3 py-3 text-sm">
+                        <td className="px-3 py-3 text-sm text-[#4d2a35] whitespace-nowrap">
                           {attendee.is_visitor ? "Yes" : "No"}
                         </td>
-                        <td className="px-3 py-3">
+                        <td className="px-3 py-3 whitespace-nowrap">
                           {attendee.is_confirmed ? (
-                            <span className="inline-flex items-center gap-1.5 rounded-full bg-[#dcfce7] px-3 py-1 text-xs font-semibold text-[#166534]">
-                              <CheckCircle2 className="h-3.5 w-3.5" />
+                            <span className="inline-flex items-center gap-1.5 rounded-md bg-[#dcfce7] px-2 py-1 text-[11px] font-bold text-[#166534]">
+                              <CheckCircle2 className="h-3 w-3" />
                               Confirmed
                             </span>
                           ) : (
-                            <span className="inline-flex items-center gap-1.5 rounded-full bg-[#fef3c7] px-3 py-1 text-xs font-semibold text-[#92400e]">
+                            <span className="inline-flex items-center gap-1.5 rounded-md bg-[#fef3c7] px-2 py-1 text-[11px] font-bold text-[#92400e]">
                               Pending
                             </span>
                           )}
                         </td>
-                        <td className="px-3 py-3 text-sm">
-                          <div className="flex items-center gap-1.5">
-                            <CalendarDays className="h-3.5 w-3.5 text-[#5b1e2e]/40" />
-                            <span className="text-xs text-[#4d2a35]">
-                              {formatDate(attendee.registered_on || null)}
-                            </span>
+                        <td className="px-3 py-3 text-sm text-[#4d2a35] whitespace-nowrap">
+                          <div className="leading-tight">
+                            <div className="font-semibold text-[#2a0d18]">
+                              {
+                                formatDate(
+                                  attendee.registered_on || null,
+                                ).split(",")[0]
+                              }
+                            </div>
+                            <div className="text-[11px] text-[#5b1e2e]/60">
+                              {formatDate(attendee.registered_on || null).split(
+                                ",",
+                              )[1] || ""}
+                            </div>
                           </div>
                         </td>
-                        <td className="rounded-r-xl px-3 py-3">
-                          <span className="block max-w-[80px] truncate font-mono text-xs text-[#5b1e2e]">
+                        <td className="px-3 py-3 whitespace-nowrap">
+                          <span className="block max-w-[100px] truncate font-mono text-[11px] text-[#5b1e2e]">
                             {attendee.qrcode}
                           </span>
+                        </td>
+                        <td className="px-3 py-3 text-center whitespace-nowrap">
+                          <a
+                            href={`tel:${attendee.phone}`}
+                            className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-[#5b1e2e] text-white transition hover:bg-[#431724] hover:scale-110 active:scale-95"
+                            title={`Call ${attendee.fullname}`}
+                          >
+                            <Phone className="h-3.5 w-3.5" />
+                          </a>
                         </td>
                       </tr>
                     ))
