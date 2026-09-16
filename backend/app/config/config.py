@@ -43,6 +43,10 @@ class Config:
     JWT_REFRESH_TOKEN_EXPIRES = timedelta(seconds=int(
         os.getenv('JWT_REFRESH_TOKEN_EXPIRES', 2592000)))
 
+    CLOUD_NAME = os.getenv("CLOUD_NAME")
+    CLOUDINARY_API_KEY = os.getenv("CLOUDINARY_API_KEY")
+    CLOUDINARY_API_SECRET = os.getenv("CLOUDINARY_API_SECRET")
+
 
 class DevelopmentConfig(Config):
     """Development configurations."""

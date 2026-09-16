@@ -9,6 +9,7 @@ from flask_migrate import Migrate
 from flask_jwt_extended import JWTManager  # Import it
 from app.config.config import DevelopmentConfig, ProductionConfig  # Import the class
 from werkzeug.exceptions import MethodNotAllowed, NotFound
+from app.services.cloudinary.cloudinary import init_cloudinary
 
 # Import Scheduler Extensions
 from apscheduler.schedulers.background import BackgroundScheduler
@@ -47,6 +48,7 @@ def create_app():
     migrate.init_app(app, db)
     jwt.init_app(app)
     limiter.init_app(app)
+    init_cloudinary(app)
 
     # Force load models into the application context for migrations
     from app.models.TokenBlocklist import TokenBlocklist

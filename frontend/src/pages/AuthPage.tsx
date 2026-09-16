@@ -40,6 +40,11 @@ type DashboardStats = {
   confirmed_attendees: number;
   awaiting_confirmation: number;
   visitor_count: number;
+  // New payment stats
+  paid_transfer: number; // bank_transfer and verified
+  pending_verification: number; // bank_transfer but not verified
+  cash_payment: number; // cash, unpaid
+  expected_revenue: number; // sum of verified + pending amounts
 };
 
 type FilterStatus = "all" | "confirmed" | "pending";
@@ -49,6 +54,10 @@ const statsDefaults: DashboardStats = {
   confirmed_attendees: 0,
   awaiting_confirmation: 0,
   visitor_count: 0,
+  paid_transfer: 0,
+  pending_verification: 0,
+  cash_payment: 0,
+  expected_revenue: 0,
 };
 
 export function AuthPage() {
@@ -115,6 +124,26 @@ export function AuthPage() {
         label: "Visitors",
         value: stats.visitor_count,
         accent: "from-[#4338ca] to-[#6366f1]",
+      },
+      {
+        label: "Paid transfer",
+        value: stats.paid_transfer,
+        accent: "from-[#059669] to-[#34d399]",
+      },
+      {
+        label: "Pending verify",
+        value: stats.pending_verification,
+        accent: "from-[#ca8a04] to-[#facc15]",
+      },
+      {
+        label: "Cash at venue",
+        value: stats.cash_payment,
+        accent: "from-[#b91c1c] to-[#ef4444]",
+      },
+      {
+        label: "Expected ₦",
+        value: stats.expected_revenue.toLocaleString("en-NG"),
+        accent: "from-[#7c3aed] to-[#a855f7]",
       },
     ],
     [stats],

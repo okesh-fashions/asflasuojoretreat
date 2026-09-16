@@ -15,6 +15,8 @@ import {
   Wallet,
   Upload,
   X,
+  Check,
+  Copy,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import api from "../utils/axiosConfig";
@@ -42,6 +44,10 @@ type AttendeeRecord = {
   qrcode: string;
   is_visitor: boolean;
   is_confirmed: boolean;
+  payment_method?: "bank_transfer" | "cash" | null;
+  payment_status?: "pending_verification" | "unpaid" | "verified" | null;
+  amount_due?: number | null;
+  receipt_url?: string | null;
   registered_on?: string | null;
 };
 
@@ -106,6 +112,7 @@ export function LandingPage() {
   );
   const [qrDataUrl, setQrDataUrl] = useState("");
   const [receiptPreview, setReceiptPreview] = useState<string>("");
+  const [copiedField, setCopiedField] = useState<string>("");
 
   const updateField = (
     field: keyof AttendeeFormState,
@@ -305,6 +312,7 @@ export function LandingPage() {
     setForm(initialForm);
     setErrors({});
     setReceiptPreview("");
+    setCopiedField("");
   };
 
   const downloadQr = () => {
@@ -316,6 +324,29 @@ export function LandingPage() {
     link.href = qrDataUrl;
     link.download = `ASF-${savedAttendee?.qrcode || "attendee"}-qr.png`;
     link.click();
+  };
+
+  const copyToClipboard = async (text: string, field: string) => {
+    try {
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(text);
+      } else {
+        // Fallback for non-HTTPS / older browsers
+        const textarea = document.createElement("textarea");
+        textarea.value = text;
+        textarea.style.position = "fixed";
+        textarea.style.opacity = "0";
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand("copy");
+        document.body.removeChild(textarea);
+      }
+      setCopiedField(field);
+      toast.success("Copied!");
+      setTimeout(() => setCopiedField(""), 2500);
+    } catch (err) {
+      toast.error("Failed to copy. Please copy manually.");
+    }
   };
 
   const whatsappUrl = `https://wa.me/2348144152544?text=I%20saw%20the%20site%20you%20built%20for%20ASF%20LASU%20OJO%20Retreat%20Registration...`;
@@ -626,6 +657,7 @@ export function LandingPage() {
                                 {ACCOUNT_DETAILS.bank}
                               </span>
                             </div>
+
                             <div className="flex justify-between gap-2">
                               <span className="text-[#5b1e2e]/70">
                                 Account Name
@@ -634,22 +666,68 @@ export function LandingPage() {
                                 {ACCOUNT_DETAILS.accountName}
                               </span>
                             </div>
-                            <div className="flex justify-between gap-2">
+
+                            <div className="flex items-center justify-between gap-2">
                               <span className="text-[#5b1e2e]/70">
                                 Account Number
                               </span>
-                              <span className="font-mono font-bold text-[#2a0d18]">
-                                {ACCOUNT_DETAILS.accountNumber}
-                              </span>
+                              <div className="flex items-center gap-1.5">
+                                <span className="font-mono font-bold text-[#2a0d18]">
+                                  {ACCOUNT_DETAILS.accountNumber}
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    copyToClipboard(
+                                      ACCOUNT_DETAILS.accountNumber,
+                                      "accountNumber",
+                                    )
+                                  }
+                                  className="inline-flex h-6 w-6 items-center justify-center rounded-md bg-[#5b1e2e]/5 text-[#5b1e2e] transition hover:bg-[#5b1e2e]/10 active:scale-95"
+                                  aria-label="Copy account number"
+                                  title="Copy account number"
+                                >
+                                  {copiedField === "accountNumber" ? (
+                                    <Check className="h-3 w-3 text-green-600" />
+                                  ) : (
+                                    <Copy className="h-3 w-3" />
+                                  )}
+                                </button>
+                              </div>
                             </div>
-                            <div className="flex justify-between gap-2 border-t border-[#5b1e2e]/10 pt-1.5">
+
+                            <div className="flex items-center justify-between gap-2 border-t border-[#5b1e2e]/10 pt-1.5">
                               <span className="text-[#5b1e2e]/70">Amount</span>
-                              <span className="font-bold text-[#2a0d18]">
-                                ₦
-                                {form.is_visitor
-                                  ? FEES.invitee
-                                  : FEES.memberOnline}
-                              </span>
+                              <div className="flex items-center gap-1.5">
+                                <span className="font-bold text-[#2a0d18]">
+                                  ₦
+                                  {form.is_visitor
+                                    ? FEES.invitee
+                                    : FEES.memberOnline}
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    copyToClipboard(
+                                      String(
+                                        form.is_visitor
+                                          ? FEES.invitee
+                                          : FEES.memberOnline,
+                                      ),
+                                      "amount",
+                                    )
+                                  }
+                                  className="inline-flex h-6 w-6 items-center justify-center rounded-md bg-[#5b1e2e]/5 text-[#5b1e2e] transition hover:bg-[#5b1e2e]/10 active:scale-95"
+                                  aria-label="Copy amount"
+                                  title="Copy amount"
+                                >
+                                  {copiedField === "amount" ? (
+                                    <Check className="h-3 w-3 text-green-600" />
+                                  ) : (
+                                    <Copy className="h-3 w-3" />
+                                  )}
+                                </button>
+                              </div>
                             </div>
                           </div>
                         </div>

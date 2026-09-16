@@ -26,6 +26,12 @@ class Attendees(db.Model):
     department = db.Column(db.String(120), nullable=True)
     level = db.Column(db.String(3), nullable=True)
     qrcode = db.Column(db.String(12), unique=True, nullable=False, index=True)
+    # Remeber to change their nullable to False
+    payment_method = db.Column(db.String(20), nullable=True)
+    payment_status = db.Column(db.String(20), nullable=True)
+    amount_due = db.Column(db.Numeric(precision=10, scale=2), nullable=True)
+    receipt_url = db.Column(db.Text, nullable=True)
+    # Remeber!!!
     is_visitor = db.Column(db.Boolean, nullable=False, default=False)
     is_confirmed = db.Column(db.Boolean, nullable=False, default=False)
     registered_on = db.Column(
@@ -59,6 +65,10 @@ class Attendees(db.Model):
             "department": self.department if self.department else None,
             "level": self.level if self.level else None,
             "qrcode": self.qrcode,
+            "payment_method": self.payment_method if self.payment_method else None,
+            "payment_status": self.payment_status if self.payment_status else None,
+            "amount_due": float(self.amount_due) if self.amount_due is not None else None,
+            "receipt_url": self.receipt_url if self.receipt_url else None,
             "is_visitor": self.is_visitor,
             "is_confirmed": self.is_confirmed,
             "registered_on": registered_on_iso,

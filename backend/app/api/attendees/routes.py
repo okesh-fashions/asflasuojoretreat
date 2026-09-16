@@ -9,6 +9,7 @@ from sqlalchemy import case, func
 from app import db, limiter
 from app.models.Attendees import Attendees
 from app.utils.extensions import generate_QR
+from app.services.cloudinary.cloudinary import upload_file_to_cloudinary
 from app.services.email.tasks import trigger_registration_confirmation_async
 
 
@@ -19,7 +20,13 @@ attendees_bp = Blueprint("attendees", __name__)
 @attendees_bp.route("/register", methods=["POST"])
 @limiter.limit('20 per minute')
 def attendee_register_endpoint():
-    data = request.get_json() or {}
+    # ========== NEW: Handle both JSON and multipart/form-data ==========
+    if request.content_type and request.content_type.startswith("multipart/form-data"):
+        data = request.form.to_dict()
+        receipt_file = request.files.get("receipt")
+    else:
+        data = request.get_json() or {}
+        receipt_file = None
 
     # 1. Base validation for EVERYone
     base_required = ['fullname', 'phone', 'email']
@@ -34,7 +41,32 @@ def attendee_register_endpoint():
     fullname = str(data.get('fullname', '')).strip()
     email = str(data.get('email', '')).strip().lower()
     phone = str(data.get('phone', '')).strip()
-    
+    payment_method = str(data.get('payment_method', '')).strip().lower()
+    amount_due_raw = str(data.get('amount_due', '')).strip()
+
+    # ========== NEW: Validate payment_method ==========
+    if payment_method not in ('bank_transfer', 'cash'):
+        return jsonify({
+            "status": "ERROR",
+            "message": "payment_method must be 'bank_transfer' or 'cash'",
+            "code": 400
+        }), 400
+
+    # ========== NEW: Determine payment_status ==========
+    payment_status = (
+        "pending_verification" if payment_method == "bank_transfer" else "unpaid"
+    )
+
+    # ========== NEW: Validate amount_due ==========
+    try:
+        amount_due = float(amount_due_raw) if amount_due_raw else None
+    except ValueError:
+        return jsonify({
+            "status": "ERROR",
+            "message": "amount_due must be a valid number",
+            "code": 400
+        }), 400
+
     # Validate email
     if not email or '@' not in email:
         return jsonify({
@@ -42,7 +74,7 @@ def attendee_register_endpoint():
             "message": "Valid email address is required",
             "code": 400
         }), 400
-    
+
     # Validate phone
     if not phone.isdigit() or len(phone) != 11:
         return jsonify({
@@ -64,8 +96,21 @@ def attendee_register_endpoint():
                 "code": 400
             }), 400
 
+    # ========== NEW: Receipt is required for bank_transfer ==========
+    if payment_method == "bank_transfer" and not receipt_file:
+        return jsonify({
+            "status": "ERROR",
+            "message": "Receipt image is required for bank transfer payments",
+            "code": 400
+        }), 400
+
     # 4. Generate unique asset strings safely
     qr_code_string = generate_QR()
+
+    # ========== NEW: Save receipt if present ==========
+    receipt_url = None
+    if receipt_file:
+        receipt_url = upload_file_to_cloudinary(receipt_file)
 
     # 5. Build record based on sanitized data inputs
     if is_visitor:
@@ -74,7 +119,11 @@ def attendee_register_endpoint():
             phone=phone,
             email=email,  # ✅ FIXED: Email is set
             qrcode=qr_code_string,
-            is_visitor=True
+            is_visitor=True,
+            payment_method=payment_method,
+            payment_status=payment_status,
+            amount_due=amount_due,
+            receipt_url=receipt_url,
         )
     else:
         new_attendee = Attendees(
@@ -85,7 +134,11 @@ def attendee_register_endpoint():
             department=str(data.get('department', '')).strip(),
             level=str(data.get('level', '')).strip(),
             qrcode=qr_code_string,
-            is_visitor=False
+            is_visitor=False,
+            payment_method=payment_method,
+            payment_status=payment_status,
+            amount_due=amount_due,
+            receipt_url=receipt_url,
         )
 
     try:
@@ -98,7 +151,7 @@ def attendee_register_endpoint():
             fullname=fullname,
             qrcode=qr_code_string
         )
-        
+
         return jsonify({
             "status": "SUCCESS",
             "attendee": new_attendee.to_dict(),
@@ -109,7 +162,7 @@ def attendee_register_endpoint():
     except IntegrityError as e:
         db.session.rollback()
         err_msg = str(e.orig)
-        
+
         # Check for duplicate qrcode
         if "qrcode" in err_msg:
             return jsonify({
@@ -187,7 +240,8 @@ def confirm_attendee_endpoint():
         }), 400
 
     attendee = db.session.execute(
-        db.select(Attendees).where(Attendees.qrcode == str(data['qrcode']).strip())
+        db.select(Attendees).where(
+            Attendees.qrcode == str(data['qrcode']).strip())
     ).scalar_one_or_none()
 
     if attendee is None:
@@ -238,7 +292,36 @@ def get_attendees_stats_endpoint():
             func.sum(case((Attendees.is_confirmed == True, 1), else_=0)).label(
                 "confirmed_attendees"),
             func.sum(case((Attendees.is_visitor == True, 1), else_=0)
-                     ).label("visitor_count")
+                     ).label("visitor_count"),
+            # ========== NEW: payment counts ==========
+            func.sum(case(
+                ((Attendees.payment_method == 'bank_transfer') &
+                 (Attendees.payment_status == 'verified'), 1),
+                else_=0
+            )).label("paid_transfer"),
+            func.sum(case(
+                ((Attendees.payment_method == 'bank_transfer') &
+                 (Attendees.payment_status == 'pending_verification'), 1),
+                else_=0
+            )).label("pending_verification"),
+            func.sum(case(
+                (Attendees.payment_method == 'cash', 1),
+                else_=0
+            )).label("cash_payment"),
+
+            # ========== NEW: expected revenue ==========
+            # Count cash (unpaid) + verified transfer + pending transfer
+            func.coalesce(func.sum(
+                case(
+                    (
+                        (Attendees.payment_method == 'cash') |
+                        ((Attendees.payment_method == 'bank_transfer') &
+                         (Attendees.payment_status.in_(['verified', 'pending_verification']))),
+                        Attendees.amount_due
+                    ),
+                    else_=0
+                )
+            ), 0).label("expected_revenue"),
         )
 
         stats_record = db.session.execute(query).one()
@@ -246,6 +329,10 @@ def get_attendees_stats_endpoint():
         total_attendees = int(stats_record.total_attendees or 0)
         confirmed_attendees = int(stats_record.confirmed_attendees or 0)
         visitor_count = int(stats_record.visitor_count or 0)
+        paid_transfer = int(stats_record.paid_transfer or 0)
+        pending_verification = int(stats_record.pending_verification or 0)
+        cash_payment = int(stats_record.cash_payment or 0)
+        expected_revenue = float(stats_record.expected_revenue or 0)
 
         return jsonify({
             "status": "SUCCESS",
@@ -254,7 +341,11 @@ def get_attendees_stats_endpoint():
                 "total_attendees": total_attendees,
                 "confirmed_attendees": confirmed_attendees,
                 "awaiting_confirmation": total_attendees - confirmed_attendees,
-                "visitor_count": visitor_count
+                "visitor_count": visitor_count,
+                "paid_transfer": paid_transfer,
+                "pending_verification": pending_verification,
+                "cash_payment": cash_payment,
+                "expected_revenue": expected_revenue,
             },
             "code": 200
         }), 200

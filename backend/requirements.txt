@@ -12,3 +12,4 @@ flask-jwt-extended
 flask_apscheduler
 apscheduler
 pytz
+cloudinary
