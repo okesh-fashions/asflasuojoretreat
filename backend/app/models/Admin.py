@@ -17,7 +17,7 @@ class Admin(db.Model):
         nullable=False
     )
     fullname = db.Column(db.String(250), nullable=False)
-    email = db.Column(db.String(120), unique=True, nullable=False)
+    email = db.Column(db.String(120), unique=True, nullable=False, index=True)
     phone = db.Column(db.String(11), nullable=False)
     password_hash = db.Column(db.String(255), nullable=False)
     created_at = db.Column(

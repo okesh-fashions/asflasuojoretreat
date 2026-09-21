@@ -84,7 +84,12 @@ def attendee_register_endpoint():
         }), 400
 
     # 3. Conditional validation based on visitor status
-    is_visitor = bool(data.get('is_visitor', False))
+    raw_is_visitor = data.get('is_visitor', False)
+    if isinstance(raw_is_visitor, bool):
+        is_visitor = raw_is_visitor
+    else:
+        is_visitor = str(raw_is_visitor).strip(
+        ).lower() in ('true', '1', 'yes', 'on')
 
     if not is_visitor:
         # Students must provide academic fields

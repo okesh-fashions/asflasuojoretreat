@@ -10,6 +10,9 @@ import {
   LogOut,
   ShieldCheck,
   Phone,
+  Receipt,
+  ExternalLink,
+  X,
 } from "lucide-react";
 import toast from "react-hot-toast";
 import * as XLSX from "xlsx";
@@ -27,6 +30,8 @@ type AttendeeRecord = {
   department?: string | null;
   level?: string | null;
   qrcode: string;
+  payment_method: string;
+  receipt_url?: string | null;
   is_visitor: boolean;
   is_confirmed: boolean;
   registered_on?: string | null;
@@ -77,6 +82,9 @@ export function AuthPage() {
   });
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<FilterStatus>("all");
+  const [receiptPreviewUrl, setReceiptPreviewUrl] = useState<string | null>(
+    null,
+  );
 
   const loadDashboard = async () => {
     setIsLoading(true);
@@ -869,10 +877,16 @@ export function AuthPage() {
                       Status
                     </th>
                     <th className="px-3 py-3 font-semibold whitespace-nowrap">
+                      Payment Method
+                    </th>
+                    <th className="px-3 py-3 font-semibold whitespace-nowrap">
                       Registered On
                     </th>
                     <th className="px-3 py-3 font-semibold whitespace-nowrap">
                       QR
+                    </th>
+                    <th className="px-3 py-3 font-semibold whitespace-nowrap">
+                      Receipt
                     </th>
                     <th className="px-3 py-3 font-semibold whitespace-nowrap text-center">
                       Action
@@ -883,7 +897,7 @@ export function AuthPage() {
                   {isLoading ? (
                     <tr>
                       <td
-                        colSpan={11}
+                        colSpan={13}
                         className="px-4 py-10 text-center text-sm text-[#4d2a35]"
                       >
                         Loading attendees...
@@ -892,7 +906,7 @@ export function AuthPage() {
                   ) : filteredAttendees.length === 0 ? (
                     <tr>
                       <td
-                        colSpan={11}
+                        colSpan={13}
                         className="px-4 py-10 text-center text-sm text-[#4d2a35]"
                       >
                         No attendees match the current filters.
@@ -938,6 +952,11 @@ export function AuthPage() {
                           )}
                         </td>
                         <td className="px-3 py-3 text-sm text-[#4d2a35] whitespace-nowrap">
+                          {attendee.payment_method === "bank_transfer"
+                            ? "Bank Transfer"
+                            : "Cash"}
+                        </td>
+                        <td className="px-3 py-3 text-sm text-[#4d2a35] whitespace-nowrap">
                           <div className="leading-tight">
                             <div className="font-semibold text-[#2a0d18]">
                               {
@@ -957,6 +976,25 @@ export function AuthPage() {
                           <span className="block max-w-[100px] truncate font-mono text-[11px] text-[#5b1e2e]">
                             {attendee.qrcode}
                           </span>
+                        </td>
+                        <td className="px-3 py-3 whitespace-nowrap text-center">
+                          {attendee.receipt_url ? (
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setReceiptPreviewUrl(attendee.receipt_url!)
+                              }
+                              className="inline-flex items-center gap-1.5 rounded-md bg-[#5b1e2e]/10 px-2.5 py-1 text-[11px] font-bold text-[#5b1e2e] transition hover:bg-[#5b1e2e]/20 active:scale-95"
+                              title="View receipt"
+                            >
+                              <Receipt className="h-3 w-3" />
+                              View
+                            </button>
+                          ) : (
+                            <span className="text-[11px] text-[#5b1e2e]/40">
+                              —
+                            </span>
+                          )}
                         </td>
                         <td className="px-3 py-3 text-center whitespace-nowrap">
                           <a
@@ -983,6 +1021,64 @@ export function AuthPage() {
           </section>
         </main>
       </div>
+      {/* Receipt Viewer Modal */}
+      {receiptPreviewUrl && (
+        <div
+          className="fixed inset-0 z-[9999] flex items-center justify-center bg-[#220b13]/90 p-4 backdrop-blur-md"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setReceiptPreviewUrl(null);
+            }
+          }}
+        >
+          <div className="relative w-full max-w-md overflow-hidden rounded-2xl bg-white shadow-2xl animate-in fade-in zoom-in duration-300">
+            <div className="flex items-center justify-between bg-[#5b1e2e] px-5 py-4 text-white">
+              <div>
+                <h3 className="text-base font-bold">Payment Receipt</h3>
+                <p className="text-xs text-white/75">
+                  Attendee's transfer proof
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setReceiptPreviewUrl(null)}
+                className="rounded-full bg-white/15 p-2 text-white transition hover:bg-white/25"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <div className="p-4">
+              <div className="relative max-h-[70vh] overflow-auto rounded-xl bg-slate-50 p-2">
+                <img
+                  src={receiptPreviewUrl}
+                  alt="Payment receipt"
+                  className="mx-auto h-auto w-full rounded-lg object-contain"
+                />
+              </div>
+
+              <div className="mt-4 flex gap-2">
+                <a
+                  href={receiptPreviewUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl border border-[#5b1e2e]/15 bg-white px-4 py-3 text-sm font-semibold text-[#2a0d18] transition hover:bg-[#5b1e2e]/5 active:scale-[0.98]"
+                >
+                  <ExternalLink className="h-4 w-4" />
+                  Open Full
+                </a>
+                <button
+                  type="button"
+                  onClick={() => setReceiptPreviewUrl(null)}
+                  className="inline-flex flex-1 items-center justify-center rounded-xl bg-[#5b1e2e] px-4 py-3 text-sm font-semibold text-white transition hover:bg-[#431724] active:scale-[0.98]"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
