@@ -801,17 +801,7 @@ export function AuthPage() {
           </section>
 
           {/* QR Scanner Section */}
-          <section className="rounded-2xl bg-white/70 p-4 shadow-[0_2px_16px_rgba(0,0,0,0.06)] backdrop-blur-[12px] sm:p-6">
-            <div className="mb-2">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.25em] text-[#5b1e2e]/60">
-                Quick Check-in
-              </p>
-              <h3 className="text-lg font-bold text-[#220b13]">
-                Confirm Attendee by QR
-              </h3>
-            </div>
-            <QrCodeScanner onScan={handleQrScan} />
-          </section>
+          <QrCodeScanner onScan={handleQrScan} />
 
           {/* Attendance Manager */}
           <section className="rounded-2xl bg-white/70 p-4 shadow-[0_2px_16px_rgba(0,0,0,0.06)] backdrop-blur-[12px] sm:p-6">

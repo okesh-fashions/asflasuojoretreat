@@ -295,13 +295,25 @@ def confirm_attendee_receipt_endpoint(attendee_id):
     ).scalar_one_or_none()
 
     if attendee is None:
-        return jsonify({"status": "ERROR", "message": "Attendee not found", "code": 404}), 404
+        return jsonify({
+            "status": "ERROR", 
+            "message": "Attendee not found", 
+            "code": 404
+        }), 404
 
     if not attendee.receipt_url:
-        return jsonify({"status": "ERROR", "message": "No receipt uploaded", "code": 400}), 400
+        return jsonify({
+            "status": "ERROR", 
+            "message": "No receipt uploaded", 
+            "code": 400
+        }), 400
 
     if attendee.payment_status == 'verified':
-        return jsonify({"status": "ERROR", "message": "Already verified", "code": 409}), 409
+        return jsonify({
+            "status": "ERROR", 
+            "message": "Already verified", 
+            "code": 409
+        }), 409
 
     attendee.payment_status = 'verified'
 
@@ -316,7 +328,11 @@ def confirm_attendee_receipt_endpoint(attendee_id):
     except Exception as e:
         db.session.rollback()
         logger.error(f"Verification crash: {str(e)}", exc_info=True)
-        return jsonify({"status": "ERROR", "message": "Internal error", "code": 500}), 500
+        return jsonify({
+            "status": "ERROR", 
+            "message": "An internal error occured.", 
+            "code": 500
+        }), 500
 
 
 # api/v1/attendees/stats

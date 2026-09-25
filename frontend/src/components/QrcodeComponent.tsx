@@ -1,4 +1,5 @@
 // src/components/QrcodeComponent.tsx
+
 import { useEffect, useRef, useState } from "react";
 import { Html5Qrcode } from "html5-qrcode";
 import { Loader2, QrCode, Sparkles, X } from "lucide-react";
@@ -51,7 +52,7 @@ export function QrCodeScanner({ onScan }: QrCodeScannerProps) {
       const containerWidth = container?.clientWidth || 300;
       const qrboxSize = Math.min(containerWidth - 40, 280);
 
-      let isProcessing = false; // Prevent duplicate processing
+      let isProcessing = false;
 
       await html5QrCode.start(
         { facingMode: "environment" },
@@ -64,22 +65,18 @@ export function QrCodeScanner({ onScan }: QrCodeScannerProps) {
           aspectRatio: 1,
         },
         async (decodedText) => {
-          // Prevent duplicate processing of the same QR code
           if (isProcessing) return;
           isProcessing = true;
 
-          // QR detected - start verification
           setIsVerifying(true);
           setScanError(null);
 
           try {
-            // Stop scanning immediately
             if (html5QrCode.isScanning) {
               await html5QrCode.stop();
             }
             setIsScanning(false);
 
-            // Call the onScan callback with the decoded text
             if (onScan) {
               const result = await onScan(decodedText);
 
@@ -87,7 +84,6 @@ export function QrCodeScanner({ onScan }: QrCodeScannerProps) {
                 setAttendeeData(result);
                 setShowSuccessModal(true);
 
-                // Auto-close success modal after 3 seconds and allow rescanning
                 setTimeout(() => {
                   setShowSuccessModal(false);
                   setAttendeeData(null);
@@ -136,33 +132,44 @@ export function QrCodeScanner({ onScan }: QrCodeScannerProps) {
     setShowSuccessModal(false);
     setAttendeeData(null);
     setScanError(null);
-    // Restart scanner for next scan
     await startScanner();
   };
 
   return (
     <>
-      <button
-        type="button"
-        onClick={startScanner}
-        disabled={isScanning || isVerifying}
-        className="inline-flex w-full items-center justify-center gap-3 rounded-xl bg-[#5b1e2e] px-6 py-3.5 text-base font-semibold text-white shadow-lg shadow-[#5b1e2e]/20 transition hover:bg-[#431724] hover:shadow-xl active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-70"
-      >
-        {isVerifying ? (
-          <>
-            <Loader2 className="h-5 w-5 animate-spin" />
-            <span>Verifying...</span>
-          </>
-        ) : (
-          <>
-            <QrCode className="h-5 w-5" />
-            <span>Scan QR Code to Confirm Attendance</span>
-            <Sparkles className="h-4 w-4" />
-          </>
-        )}
-      </button>
+      {/* Section — contains heading + button */}
+      <section className="rounded-2xl bg-white/70 p-4 shadow-[0_2px_16px_rgba(0,0,0,0.06)] backdrop-blur-[12px] sm:p-6">
+        <div className="mb-3">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.25em] text-[#5b1e2e]/60">
+            Quick Check-in
+          </p>
+          <h3 className="text-lg font-bold text-[#220b13]">
+            Confirm Attendee by QR
+          </h3>
+        </div>
 
-      {/* Scanner Modal */}
+        <button
+          type="button"
+          onClick={startScanner}
+          disabled={isScanning || isVerifying}
+          className="inline-flex w-full items-center justify-center gap-3 rounded-xl bg-[#5b1e2e] px-6 py-3.5 text-base font-semibold text-white shadow-lg shadow-[#5b1e2e]/20 transition hover:bg-[#431724] hover:shadow-xl active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-70"
+        >
+          {isVerifying ? (
+            <>
+              <Loader2 className="h-5 w-5 animate-spin" />
+              <span>Verifying...</span>
+            </>
+          ) : (
+            <>
+              <QrCode className="h-5 w-5" />
+              <span>Scan QR Code to Confirm Attendance</span>
+              <Sparkles className="h-4 w-4" />
+            </>
+          )}
+        </button>
+      </section>
+
+      {/* Scanner Modal — sibling of the section, NOT inside it */}
       {isScanning && (
         <div
           className="fixed inset-0 z-[9999] flex items-center justify-center bg-[#220b13]/90 p-4 backdrop-blur-md"
@@ -243,13 +250,12 @@ export function QrCodeScanner({ onScan }: QrCodeScannerProps) {
         </div>
       )}
 
-      {/* Success Modal */}
+      {/* Success Modal — sibling of the section, NOT inside it */}
       {showSuccessModal && attendeeData && (
         <div className="fixed inset-0 z-[10000] flex items-center justify-center bg-[#220b13]/90 p-4 backdrop-blur-md animate-in fade-in duration-300">
           <div className="relative w-full max-w-sm overflow-hidden rounded-2xl bg-gradient-to-br from-green-50 to-white shadow-2xl animate-in zoom-in duration-300">
             <div className="absolute inset-0 bg-gradient-to-br from-green-500/10 via-transparent to-transparent pointer-events-none" />
             <div className="relative flex flex-col items-center p-8 text-center">
-              {/* Animated Checkmark */}
               <div className="relative mb-6 flex h-20 w-20 items-center justify-center">
                 <div className="absolute h-20 w-20 animate-pulse rounded-full bg-green-400/20" />
                 <div className="relative flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-green-400 to-green-600 shadow-lg">
