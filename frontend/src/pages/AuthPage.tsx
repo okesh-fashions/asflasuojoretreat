@@ -11,8 +11,8 @@ import {
   ShieldCheck,
   Phone,
   Receipt,
-  ExternalLink,
   X,
+  Loader2,
 } from "lucide-react";
 import toast from "react-hot-toast";
 import * as XLSX from "xlsx";
@@ -21,6 +21,10 @@ import autoTable from "jspdf-autotable";
 import { QrCodeScanner } from "../components/QrcodeComponent";
 import { useAuth } from "../contexts/AuthContext";
 import api from "../utils/axiosConfig";
+
+// ============================================
+// Types
+// ============================================
 
 type AttendeeRecord = {
   id: string;
@@ -31,6 +35,8 @@ type AttendeeRecord = {
   level?: string | null;
   qrcode: string;
   payment_method: string;
+  payment_status?: "pending_verification" | "verified" | "unpaid" | null;
+  amount_due?: number | null;
   receipt_url?: string | null;
   is_visitor: boolean;
   is_confirmed: boolean;
@@ -44,11 +50,10 @@ type DashboardStats = {
   confirmed_attendees: number;
   awaiting_confirmation: number;
   visitor_count: number;
-  // New payment stats
-  paid_transfer: number; // bank_transfer and verified
-  pending_verification: number; // bank_transfer but not verified
-  cash_payment: number; // cash, unpaid
-  expected_revenue: number; // sum of verified + pending amounts
+  paid_transfer: number;
+  pending_verification: number;
+  cash_payment: number;
+  expected_revenue: number;
 };
 
 type FilterStatus = "all" | "confirmed" | "pending";
@@ -64,14 +69,17 @@ const statsDefaults: DashboardStats = {
   expected_revenue: 0,
 };
 
+// ============================================
+// Component
+// ============================================
+
 export function AuthPage() {
   const { login, register, logout, isAuthenticated, admin } = useAuth();
+
+  // Auth state
   const [mode, setMode] = useState<AuthMode>("login");
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [attendees, setAttendees] = useState<AttendeeRecord[]>([]);
-  const [stats, setStats] = useState<DashboardStats>(statsDefaults);
-  const [isLoading, setIsLoading] = useState(false);
   const [loginValues, setLoginValues] = useState({ email: "", password: "" });
   const [registerValues, setRegisterValues] = useState({
     admin_id: "",
@@ -80,11 +88,23 @@ export function AuthPage() {
     phone: "",
     password: "",
   });
+
+  // Dashboard state
+  const [attendees, setAttendees] = useState<AttendeeRecord[]>([]);
+  const [stats, setStats] = useState<DashboardStats>(statsDefaults);
+  const [isLoading, setIsLoading] = useState(false);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<FilterStatus>("all");
-  const [receiptPreviewUrl, setReceiptPreviewUrl] = useState<string | null>(
+
+  // Receipt modal state
+  const [receiptPreview, setReceiptPreview] = useState<AttendeeRecord | null>(
     null,
   );
+  const [isVerifying, setIsVerifying] = useState(false);
+
+  // ============================================
+  // Data loading
+  // ============================================
 
   const loadDashboard = async () => {
     setIsLoading(true);
@@ -109,6 +129,10 @@ export function AuthPage() {
       void loadDashboard();
     }
   }, [isAuthenticated]);
+
+  // ============================================
+  // Summary cards
+  // ============================================
 
   const summaryCards = useMemo(
     () => [
@@ -156,6 +180,10 @@ export function AuthPage() {
     [stats],
   );
 
+  // ============================================
+  // Auth handlers
+  // ============================================
+
   const handleLogin = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setIsSubmitting(true);
@@ -196,30 +224,24 @@ export function AuthPage() {
     await logout();
   };
 
-  // Handle QR scan - this is where the confirmation happens
+  // ============================================
+  // QR scan handler
+  // ============================================
+
   const handleQrScan = async (qrString: string) => {
     try {
-      // Add a small delay to ensure the QR code is properly processed
       await new Promise((resolve) => setTimeout(resolve, 300));
 
-      // Confirm the attendee
       const response = await api.post("/attendees/confirm", {
         qrcode: qrString,
       });
 
       const data = response.data;
 
-      // Backend returns attendee in data.data, not data.attendee
       if (data.data) {
         const attendee = data.data;
-
-        // Show success toast
         toast.success(`✓ ${attendee.fullname} confirmed!`);
-
-        // Reload dashboard to reflect changes
         await loadDashboard();
-
-        // Return attendee data for display in success modal
         return {
           fullname: attendee.fullname,
           phone: attendee.phone,
@@ -233,18 +255,50 @@ export function AuthPage() {
       }
     } catch (error: any) {
       console.error("QR verification failed:", error);
-
-      // Extract and show detailed error message
       const errorMsg =
         error.response?.data?.message ||
         error.message ||
         "Failed to verify attendee. Please try again.";
       toast.error(errorMsg);
-
-      // Return null on error - the component will handle error display
       return null;
     }
   };
+
+  // ============================================
+  // Receipt verification handler
+  // ============================================
+
+  const handleVerifyReceipt = async (attendeeId: string) => {
+    if (isVerifying) return;
+    setIsVerifying(true);
+
+    try {
+      const response = await api.post(
+        `/attendees/${attendeeId}/receipt/verify`,
+      );
+      const data = response.data;
+
+      if (data.status === "SUCCESS") {
+        toast.success("Receipt verified successfully!");
+        setReceiptPreview(null);
+        await loadDashboard();
+      } else {
+        toast.error(data.message || "Verification failed");
+      }
+    } catch (error: any) {
+      const msg =
+        error.response?.data?.message ||
+        error.message ||
+        "Failed to verify receipt. Please try again.";
+      toast.error(msg);
+    } finally {
+      setIsVerifying(false);
+    }
+  };
+
+  // ============================================
+  // Export handlers
+  // ============================================
 
   const exportTableToExcel = () => {
     const rows = attendees.map((attendee, index) => ({
@@ -264,18 +318,17 @@ export function AuthPage() {
 
     const worksheet = XLSX.utils.json_to_sheet(rows);
 
-    // Set nice column widths so the file opens up readable
     worksheet["!cols"] = [
-      { wch: 6 }, // S/N
-      { wch: 28 }, // Name
-      { wch: 15 }, // Phone
-      { wch: 30 }, // Faculty
-      { wch: 28 }, // Department
-      { wch: 8 }, // Level
-      { wch: 10 }, // Visitor
-      { wch: 12 }, // Status
-      { wch: 24 }, // Registered On
-      { wch: 20 }, // QR Code
+      { wch: 6 },
+      { wch: 28 },
+      { wch: 15 },
+      { wch: 30 },
+      { wch: 28 },
+      { wch: 8 },
+      { wch: 10 },
+      { wch: 12 },
+      { wch: 24 },
+      { wch: 20 },
     ];
 
     const workbook = XLSX.utils.book_new();
@@ -290,12 +343,10 @@ export function AuthPage() {
       format: "a4",
     });
 
-    // Title
     doc.setFontSize(16);
     doc.setTextColor(91, 30, 46);
     doc.text("ASF LASU OJO Retreat — Attendees", 40, 40);
 
-    // Subtitle with generated date
     doc.setFontSize(10);
     doc.setTextColor(120, 120, 120);
     doc.text(
@@ -360,7 +411,6 @@ export function AuthPage() {
       },
       margin: { left: 40, right: 40 },
       didParseCell: (data) => {
-        // Color the Status column
         if (data.section === "body" && data.column.index === 7) {
           if (data.cell.raw === "Confirmed") {
             data.cell.styles.textColor = [22, 101, 52];
@@ -373,7 +423,6 @@ export function AuthPage() {
       },
     });
 
-    // Footer with page numbers
     const pageCount = (doc as any).internal.getNumberOfPages();
     for (let i = 1; i <= pageCount; i++) {
       doc.setPage(i);
@@ -390,18 +439,19 @@ export function AuthPage() {
     doc.save("asf-retreat-attendees.pdf");
   };
 
-  // Filter attendees
+  // ============================================
+  // Filtering
+  // ============================================
+
   const filteredAttendees = useMemo(() => {
     let filtered = attendees;
 
-    // Status filter
     if (statusFilter === "confirmed") {
       filtered = filtered.filter((a) => a.is_confirmed);
     } else if (statusFilter === "pending") {
       filtered = filtered.filter((a) => !a.is_confirmed);
     }
 
-    // Search filter
     if (search) {
       const q = search.toLowerCase();
       filtered = filtered.filter(
@@ -417,10 +467,13 @@ export function AuthPage() {
     return filtered;
   }, [attendees, statusFilter, search]);
 
+  // ============================================
+  // Helpers
+  // ============================================
+
   const formatDate = (dateString: string | null) => {
     if (!dateString) return "—";
     const date = new Date(dateString);
-    // Fix timezone offset by subtracting 1 hour (3600000 ms) to correct UTC+1 issue
     const correctedDate = new Date(date.getTime() - 3600000);
     return correctedDate.toLocaleDateString("en-US", {
       day: "2-digit",
@@ -430,6 +483,10 @@ export function AuthPage() {
       minute: "2-digit",
     });
   };
+
+  // ============================================
+  // Unauthenticated view (login/register)
+  // ============================================
 
   if (!isAuthenticated) {
     return (
@@ -682,9 +739,14 @@ export function AuthPage() {
     );
   }
 
+  // ============================================
+  // Authenticated view (dashboard)
+  // ============================================
+
   return (
     <div className="min-h-screen bg-[#f6f0ee] px-4 py-4 text-[#2a0d18] sm:px-6 sm:py-6 lg:px-8">
       <div className="mx-auto max-w-7xl">
+        {/* Header */}
         <header className="mb-6 flex flex-col gap-3 rounded-2xl bg-white/70 p-4 shadow-[0_2px_16px_rgba(0,0,0,0.06)] backdrop-blur-[12px] sm:flex-row sm:items-center sm:justify-between sm:p-6">
           <div className="flex items-center gap-3">
             <img
@@ -848,6 +910,7 @@ export function AuthPage() {
               )}
             </div>
 
+            {/* Table */}
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
@@ -981,9 +1044,7 @@ export function AuthPage() {
                           {attendee.receipt_url ? (
                             <button
                               type="button"
-                              onClick={() =>
-                                setReceiptPreviewUrl(attendee.receipt_url!)
-                              }
+                              onClick={() => setReceiptPreview(attendee)}
                               className="inline-flex items-center gap-1.5 rounded-md bg-[#5b1e2e]/10 px-2.5 py-1 text-[11px] font-bold text-[#5b1e2e] transition hover:bg-[#5b1e2e]/20 active:scale-95"
                               title="View receipt"
                             >
@@ -1021,13 +1082,14 @@ export function AuthPage() {
           </section>
         </main>
       </div>
-      {/* Receipt Viewer Modal */}
-      {receiptPreviewUrl && (
+
+      {/* Receipt Viewer + Verify Modal */}
+      {receiptPreview && (
         <div
           className="fixed inset-0 z-[9999] flex items-center justify-center bg-[#220b13]/90 p-4 backdrop-blur-md"
           onClick={(e) => {
             if (e.target === e.currentTarget) {
-              setReceiptPreviewUrl(null);
+              setReceiptPreview(null);
             }
           }}
         >
@@ -1036,12 +1098,12 @@ export function AuthPage() {
               <div>
                 <h3 className="text-base font-bold">Payment Receipt</h3>
                 <p className="text-xs text-white/75">
-                  Attendee's transfer proof
+                  {receiptPreview.fullname} • {receiptPreview.phone}
                 </p>
               </div>
               <button
                 type="button"
-                onClick={() => setReceiptPreviewUrl(null)}
+                onClick={() => setReceiptPreview(null)}
                 className="rounded-full bg-white/15 p-2 text-white transition hover:bg-white/25"
               >
                 <X className="h-4 w-4" />
@@ -1049,28 +1111,45 @@ export function AuthPage() {
             </div>
 
             <div className="p-4">
-              <div className="relative max-h-[70vh] overflow-auto rounded-xl bg-slate-50 p-2">
+              <div className="relative max-h-[60vh] overflow-auto rounded-xl bg-slate-50 p-2">
                 <img
-                  src={receiptPreviewUrl}
+                  src={receiptPreview.receipt_url!}
                   alt="Payment receipt"
                   className="mx-auto h-auto w-full rounded-lg object-contain"
                 />
               </div>
 
               <div className="mt-4 flex gap-2">
-                <a
-                  href={receiptPreviewUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl border border-[#5b1e2e]/15 bg-white px-4 py-3 text-sm font-semibold text-[#2a0d18] transition hover:bg-[#5b1e2e]/5 active:scale-[0.98]"
-                >
-                  <ExternalLink className="h-4 w-4" />
-                  Open Full
-                </a>
+                {receiptPreview.payment_status !== "verified" ? (
+                  <button
+                    type="button"
+                    onClick={() => handleVerifyReceipt(receiptPreview.id)}
+                    disabled={isVerifying}
+                    className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-[#5b1e2e] px-4 py-3 text-sm font-semibold text-white transition hover:bg-[#431724] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {isVerifying ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        Verifying...
+                      </>
+                    ) : (
+                      <>
+                        <CheckCircle2 className="h-4 w-4" />
+                        Verify Receipt
+                      </>
+                    )}
+                  </button>
+                ) : (
+                  <div className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-green-50 px-4 py-3 text-sm font-semibold text-green-700">
+                    <CheckCircle2 className="h-4 w-4" />
+                    Already Verified
+                  </div>
+                )}
+
                 <button
                   type="button"
-                  onClick={() => setReceiptPreviewUrl(null)}
-                  className="inline-flex flex-1 items-center justify-center rounded-xl bg-[#5b1e2e] px-4 py-3 text-sm font-semibold text-white transition hover:bg-[#431724] active:scale-[0.98]"
+                  onClick={() => setReceiptPreview(null)}
+                  className="inline-flex flex-1 items-center justify-center rounded-xl border border-[#5b1e2e]/15 bg-white px-4 py-3 text-sm font-semibold text-[#2a0d18] transition hover:bg-[#5b1e2e]/5 active:scale-[0.98]"
                 >
                   Close
                 </button>

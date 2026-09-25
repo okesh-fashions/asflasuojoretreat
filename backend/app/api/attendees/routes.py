@@ -286,6 +286,39 @@ def confirm_attendee_endpoint():
         }), 500
 
 
+@attendees_bp.route("/<string:attendee_id>/receipt/verify", methods=["POST"])
+@limiter.limit('30 per minute')
+@jwt_required()
+def confirm_attendee_receipt_endpoint(attendee_id):
+    attendee = db.session.execute(
+        db.select(Attendees).where(Attendees.id == attendee_id)
+    ).scalar_one_or_none()
+
+    if attendee is None:
+        return jsonify({"status": "ERROR", "message": "Attendee not found", "code": 404}), 404
+
+    if not attendee.receipt_url:
+        return jsonify({"status": "ERROR", "message": "No receipt uploaded", "code": 400}), 400
+
+    if attendee.payment_status == 'verified':
+        return jsonify({"status": "ERROR", "message": "Already verified", "code": 409}), 409
+
+    attendee.payment_status = 'verified'
+
+    try:
+        db.session.commit()
+        return jsonify({
+            "status": "SUCCESS",
+            "data": attendee.to_dict(),
+            "code": 200,
+            "message": "Receipt verified successfully"
+        }), 200
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Verification crash: {str(e)}", exc_info=True)
+        return jsonify({"status": "ERROR", "message": "Internal error", "code": 500}), 500
+
+
 # api/v1/attendees/stats
 @attendees_bp.route("/stats", methods=["GET"])
 @limiter.limit('30 per minute')
