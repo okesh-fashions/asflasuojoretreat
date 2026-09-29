@@ -26,7 +26,7 @@ const NAME_MAX_WIDTH = 300;
 const NAME_FONT_FAMILY = '"Inter", "Helvetica Neue", Arial, sans-serif';
 const NAME_FONT_WEIGHT = 800;
 const NAME_FONT_SIZE = 42;
-const NAME_LINE_HEIGHT = 46; // vertical space between lines
+// const NAME_LINE_HEIGHT = 46; // vertical space between lines
 
 export function PictureAttendance() {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
