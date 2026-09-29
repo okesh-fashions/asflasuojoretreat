@@ -941,6 +941,37 @@ export function LandingPage() {
                     <p>School: {retreatInfo.school}</p>
                   </div>
 
+                  {/* I'll Be Attending Flyer CTA */}
+                  <Link
+                    to="/picture-attendance"
+                    className="group relative block overflow-hidden rounded-xl bg-gradient-to-br from-[#5b1e2e] via-[#7c2a3a] to-[#b44b61] p-3.5 shadow-lg shadow-[#5b1e2e]/25 transition hover:shadow-xl active:scale-[0.98] sm:rounded-2xl sm:p-4"
+                  >
+                    <div className="absolute -top-10 -right-10 h-28 w-28 rounded-full bg-white/10 blur-2xl" />
+                    <div className="absolute -bottom-10 -left-10 h-20 w-20 rounded-full bg-white/5 blur-2xl" />
+
+                    <div className="relative flex items-center gap-3">
+                      <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-white/15 text-white backdrop-blur-sm sm:h-11 sm:w-11">
+                        <Sparkles className="h-4 w-4 sm:h-5 sm:w-5" />
+                      </div>
+
+                      <div className="min-w-0 flex-1">
+                        <p className="text-[9px] font-semibold uppercase tracking-[0.22em] text-white/70 sm:text-[10px]">
+                          Bonus for you
+                        </p>
+                        <p className="text-sm font-bold text-white sm:text-base">
+                          Generate your attending flyer
+                        </p>
+                        <p className="mt-0.5 text-[10px] text-white/75 sm:text-xs">
+                          Add your photo and name — download & share
+                        </p>
+                      </div>
+
+                      <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-white text-[#5b1e2e] shadow-md transition group-hover:translate-x-0.5 sm:h-9 sm:w-9">
+                        <ArrowRight className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                      </div>
+                    </div>
+                  </Link>
+
                   <button
                     type="button"
                     onClick={handleReset}
