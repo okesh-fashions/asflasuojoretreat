@@ -142,7 +142,7 @@ export function AuthPage() {
         accent: "from-[#5b1e2e] to-[#7b2a3b]",
       },
       {
-        label: "Confirmed",
+        label: "Present",
         value: stats.confirmed_attendees,
         accent: "from-[#0f766e] to-[#14b8a6]",
       },
@@ -157,12 +157,12 @@ export function AuthPage() {
         accent: "from-[#4338ca] to-[#6366f1]",
       },
       {
-        label: "Paid transfer",
+        label: "Total Transfered",
         value: stats.paid_transfer,
         accent: "from-[#059669] to-[#34d399]",
       },
       {
-        label: "Pending verify",
+        label: "Awaiting Transfer Verification",
         value: stats.pending_verification,
         accent: "from-[#ca8a04] to-[#facc15]",
       },
@@ -172,7 +172,7 @@ export function AuthPage() {
         accent: "from-[#b91c1c] to-[#ef4444]",
       },
       {
-        label: "Expected ₦",
+        label: "Total Expected (₦)",
         value: stats.expected_revenue.toLocaleString("en-NG"),
         accent: "from-[#7c3aed] to-[#a855f7]",
       },
