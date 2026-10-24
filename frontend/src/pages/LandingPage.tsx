@@ -1,6 +1,6 @@
 // src/pages/LandingPage.tsx
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import QRCode from "qrcode";
 import toast from "react-hot-toast";
 import {
@@ -8,7 +8,7 @@ import {
   CheckCircle2,
   Download,
   Phone,
-  Mail, // Added missing Mail import
+  Mail,
   ShieldCheck,
   Sparkles,
   UserRound,
@@ -29,8 +29,8 @@ type AttendeeFormState = {
   department: string;
   level: string;
   is_visitor: boolean;
-  pay_now: boolean; // true = Yes, false = No
-  receipt?: File | null; // receipt image if pay_now
+  pay_now: boolean;
+  receipt?: File | null;
 };
 
 type AttendeeRecord = {
@@ -113,6 +113,41 @@ export function LandingPage() {
   const [qrDataUrl, setQrDataUrl] = useState("");
   const [receiptPreview, setReceiptPreview] = useState<string>("");
   const [copiedField, setCopiedField] = useState<string>("");
+
+  // Countdown state
+  const [timeLeft, setTimeLeft] = useState({
+    days: 0,
+    hours: 0,
+    minutes: 0,
+    seconds: 0,
+  });
+
+  // Countdown effect
+  useEffect(() => {
+    const targetDate = new Date("2026-11-13T10:00:00").getTime();
+
+    const interval = setInterval(() => {
+      const now = new Date().getTime();
+      const distance = targetDate - now;
+
+      if (distance < 0) {
+        clearInterval(interval);
+        setTimeLeft({ days: 0, hours: 0, minutes: 0, seconds: 0 });
+        return;
+      }
+
+      setTimeLeft({
+        days: Math.floor(distance / (1000 * 60 * 60 * 24)),
+        hours: Math.floor(
+          (distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60),
+        ),
+        minutes: Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60)),
+        seconds: Math.floor((distance % (1000 * 60)) / 1000),
+      });
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, []);
 
   const updateField = (
     field: keyof AttendeeFormState,
@@ -239,7 +274,6 @@ export function LandingPage() {
     setIsSubmitting(true);
 
     try {
-      // Determine payment method
       const paymentMethod =
         form.is_visitor || form.pay_now ? "bank_transfer" : "cash";
 
@@ -331,7 +365,6 @@ export function LandingPage() {
       if (navigator.clipboard && window.isSecureContext) {
         await navigator.clipboard.writeText(text);
       } else {
-        // Fallback for non-HTTPS / older browsers
         const textarea = document.createElement("textarea");
         textarea.value = text;
         textarea.style.position = "fixed";
@@ -435,6 +468,50 @@ export function LandingPage() {
                   <p className="mt-1 text-sm font-semibold text-[#2a0d18] sm:mt-2 sm:text-base">
                     {retreatInfo.venue}
                   </p>
+                </div>
+              </div>
+
+              {/* Countdown Timer */}
+              <div className="rounded-xl bg-white/60 p-4 shadow-sm backdrop-blur-[8px] sm:rounded-2xl sm:p-5">
+                <div className="mb-3 flex items-center gap-2">
+                  <div className="h-1.5 w-1.5 rounded-full bg-[#5b1e2e] animate-pulse" />
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#5b1e2e]/70 sm:text-xs">
+                    Registration closes in
+                  </p>
+                </div>
+                <div className="grid grid-cols-4 gap-2 sm:gap-3">
+                  <div className="flex flex-col items-center justify-center rounded-xl bg-white/80 py-2.5 shadow-sm ring-1 ring-[#5b1e2e]/5">
+                    <span className="text-xl font-black text-[#220b13] sm:text-2xl">
+                      {timeLeft.days}
+                    </span>
+                    <span className="text-[9px] font-bold uppercase tracking-wider text-[#5b1e2e]/60">
+                      Days
+                    </span>
+                  </div>
+                  <div className="flex flex-col items-center justify-center rounded-xl bg-white/80 py-2.5 shadow-sm ring-1 ring-[#5b1e2e]/5">
+                    <span className="text-xl font-black text-[#220b13] sm:text-2xl">
+                      {timeLeft.hours}
+                    </span>
+                    <span className="text-[9px] font-bold uppercase tracking-wider text-[#5b1e2e]/60">
+                      Hours
+                    </span>
+                  </div>
+                  <div className="flex flex-col items-center justify-center rounded-xl bg-white/80 py-2.5 shadow-sm ring-1 ring-[#5b1e2e]/5">
+                    <span className="text-xl font-black text-[#220b13] sm:text-2xl">
+                      {timeLeft.minutes}
+                    </span>
+                    <span className="text-[9px] font-bold uppercase tracking-wider text-[#5b1e2e]/60">
+                      Mins
+                    </span>
+                  </div>
+                  <div className="flex flex-col items-center justify-center rounded-xl bg-white/80 py-2.5 shadow-sm ring-1 ring-[#5b1e2e]/5">
+                    <span className="text-xl font-black text-[#b42318] sm:text-2xl">
+                      {timeLeft.seconds}
+                    </span>
+                    <span className="text-[9px] font-bold uppercase tracking-wider text-[#5b1e2e]/60">
+                      Secs
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>
