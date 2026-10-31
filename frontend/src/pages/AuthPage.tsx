@@ -157,19 +157,24 @@ export function AuthPage() {
         accent: "from-[#4338ca] to-[#6366f1]",
       },
       {
-        label: "Total Transfered",
-        value: stats.paid_transfer,
-        accent: "from-[#059669] to-[#34d399]",
-      },
-      {
-        label: "Awaiting Transfer Verification",
-        value: stats.pending_verification,
-        accent: "from-[#ca8a04] to-[#facc15]",
+        label: "Total Transfers",
+        value: stats.paid_transfer + stats.pending_verification,
+        accent: "from-[#b91c1c] to-[#ef4444]",
       },
       {
         label: "Cash at venue",
         value: stats.cash_payment,
         accent: "from-[#b91c1c] to-[#ef4444]",
+      },
+      {
+        label: "Verified Transfers",
+        value: stats.paid_transfer,
+        accent: "from-[#059669] to-[#34d399]",
+      },
+      {
+        label: "Unverified Transfers",
+        value: stats.pending_verification,
+        accent: "from-[#ca8a04] to-[#facc15]",
       },
       {
         label: "Total Expected (₦)",
