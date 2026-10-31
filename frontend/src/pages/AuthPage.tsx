@@ -162,7 +162,7 @@ export function AuthPage() {
         accent: "from-[#b91c1c] to-[#ef4444]",
       },
       {
-        label: "Cash at venue",
+        label: "Total Cash at Venue",
         value: stats.cash_payment,
         accent: "from-[#b91c1c] to-[#ef4444]",
       },
@@ -315,6 +315,8 @@ export function AuthPage() {
       Level: attendee.level || "N/A",
       Visitor: attendee.is_visitor ? "Yes" : "No",
       Status: attendee.is_confirmed ? "Confirmed" : "Pending",
+      "Payment Method":
+        attendee.payment_method === "bank_transfer" ? "Bank Transfer" : "Cash",
       "Registered On": attendee.registered_on
         ? new Date(attendee.registered_on).toLocaleString("en-NG")
         : "N/A",
@@ -332,6 +334,7 @@ export function AuthPage() {
       { wch: 8 },
       { wch: 10 },
       { wch: 12 },
+      { wch: 16 },
       { wch: 24 },
       { wch: 20 },
     ];
@@ -371,6 +374,7 @@ export function AuthPage() {
           "Level",
           "Visitor",
           "Status",
+          "Payment Method",
           "Registered On",
         ],
       ],
@@ -383,6 +387,7 @@ export function AuthPage() {
         attendee.level || "N/A",
         attendee.is_visitor ? "Yes" : "No",
         attendee.is_confirmed ? "Confirmed" : "Pending",
+        attendee.payment_method === "bank_transfer" ? "Bank Transfer" : "Cash",
         attendee.registered_on
           ? new Date(attendee.registered_on).toLocaleString("en-NG")
           : "N/A",
@@ -405,14 +410,15 @@ export function AuthPage() {
       },
       columnStyles: {
         0: { cellWidth: 30, halign: "center" },
-        1: { cellWidth: 110 },
-        2: { cellWidth: 70 },
-        3: { cellWidth: 100 },
-        4: { cellWidth: 100 },
-        5: { cellWidth: 40, halign: "center" },
-        6: { cellWidth: 45, halign: "center" },
-        7: { cellWidth: 65, halign: "center" },
-        8: { cellWidth: 90 },
+        1: { cellWidth: 100 },
+        2: { cellWidth: 65 },
+        3: { cellWidth: 90 },
+        4: { cellWidth: 90 },
+        5: { cellWidth: 35, halign: "center" },
+        6: { cellWidth: 40, halign: "center" },
+        7: { cellWidth: 60, halign: "center" },
+        8: { cellWidth: 75, halign: "center" },
+        9: { cellWidth: 95 },
       },
       margin: { left: 40, right: 40 },
       didParseCell: (data) => {
