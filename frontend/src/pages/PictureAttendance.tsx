@@ -1,7 +1,7 @@
 // src/pages/PictureAttendance.tsx
 import { useRef, useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { ArrowLeft, Download, Upload, User, Sparkles, X } from "lucide-react";
+import { ArrowLeft, Download, Upload, User, X } from "lucide-react";
 import toast from "react-hot-toast";
 
 // ============================================
@@ -302,7 +302,7 @@ export function PictureAttendance() {
 
         <div className="mb-6">
           <div className="inline-flex items-center gap-2 rounded-full bg-white/60 px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.26em] text-[#5b1e2e] shadow-sm backdrop-blur-[8px]">
-            <Sparkles className="h-3.5 w-3.5" />
+            {/* <Sparkles className="h-3.5 w-3.5" /> */}
             Personalize your flyer
           </div>
           <h1 className="mt-3 text-3xl font-black tracking-[-0.04em] text-[#220b13] sm:text-4xl md:text-5xl">

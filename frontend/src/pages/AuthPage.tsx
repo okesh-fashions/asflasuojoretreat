@@ -142,12 +142,12 @@ export function AuthPage() {
         accent: "from-[#5b1e2e] to-[#7b2a3b]",
       },
       {
-        label: "Present",
+        label: "Present attendees",
         value: stats.confirmed_attendees,
         accent: "from-[#0f766e] to-[#14b8a6]",
       },
       {
-        label: "Awaiting",
+        label: "Awaiting attendees",
         value: stats.awaiting_confirmation,
         accent: "from-[#d97706] to-[#f59e0b]",
       },
@@ -162,7 +162,7 @@ export function AuthPage() {
         accent: "from-[#b91c1c] to-[#ef4444]",
       },
       {
-        label: "Total Cash at Venue",
+        label: "Total Cash",
         value: stats.cash_payment,
         accent: "from-[#b91c1c] to-[#ef4444]",
       },
