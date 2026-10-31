@@ -69,7 +69,7 @@ const initialForm: AttendeeFormState = {
   department: "",
   level: "",
   is_visitor: false,
-  pay_now: false,
+  pay_now: true,
   receipt: null,
 };
 
