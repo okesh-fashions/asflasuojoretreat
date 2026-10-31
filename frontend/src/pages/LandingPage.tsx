@@ -9,8 +9,8 @@ import {
   Download,
   Phone,
   Mail,
-  ShieldCheck,
-  Sparkles,
+  // ShieldCheck,
+  // Sparkles,
   UserRound,
   Wallet,
   Upload,
@@ -83,7 +83,6 @@ const facultyOptions = [
   "Transport",
   "Management Sciences",
   "Social Sciences",
-  "Engineering",
   "Other",
 ];
 
@@ -423,7 +422,7 @@ export function LandingPage() {
           <section className="grid gap-8 lg:grid-cols-[1.1fr_0.9fr]">
             <div className="space-y-5">
               <div className="inline-flex items-center gap-2 rounded-full bg-white/60 px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.26em] text-[#5b1e2e] shadow-sm backdrop-blur-[8px] sm:text-sm">
-                <Sparkles className="h-4 w-4" />
+                {/* <Sparkles className="h-4 w-4" /> */}
                 1st Semester's Retreat
               </div>
 
@@ -439,13 +438,13 @@ export function LandingPage() {
 
               <div className="flex flex-wrap items-center gap-3 text-sm text-[#3e1d2b] sm:text-base">
                 <div className="inline-flex items-center gap-2 rounded-full bg-white/60 px-3 py-2 shadow-sm backdrop-blur-[8px]">
-                  <ShieldCheck className="h-4 w-4 text-[#5b1e2e]" />
+                  {/* <ShieldCheck className="h-4 w-4 text-[#5b1e2e]" /> */}
                   <span className="text-xs sm:text-sm">
                     {retreatInfo.motto}
                   </span>
                 </div>
                 <div className="inline-flex items-center gap-2 rounded-full bg-white/60 px-3 py-2 shadow-sm backdrop-blur-[8px]">
-                  <Sparkles className="h-4 w-4 text-[#5b1e2e]" />
+                  {/* <Sparkles className="h-4 w-4 text-[#5b1e2e]" />  */}
                   <span className="text-xs sm:text-sm">
                     {retreatInfo.slogan}
                   </span>
@@ -476,7 +475,7 @@ export function LandingPage() {
                 <div className="mb-3 flex items-center gap-2">
                   <div className="h-1.5 w-1.5 rounded-full bg-[#5b1e2e] animate-pulse" />
                   <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#5b1e2e]/70 sm:text-xs">
-                    Registration closes in
+                    Retreat commences in
                   </p>
                 </div>
                 <div className="grid grid-cols-4 gap-2 sm:gap-3">
@@ -1028,7 +1027,7 @@ export function LandingPage() {
 
                     <div className="relative flex items-center gap-3">
                       <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-white/15 text-white backdrop-blur-sm sm:h-11 sm:w-11">
-                        <Sparkles className="h-4 w-4 sm:h-5 sm:w-5" />
+                        {/* <Sparkles className="h-4 w-4 sm:h-5 sm:w-5" /> */}
                       </div>
 
                       <div className="min-w-0 flex-1">
