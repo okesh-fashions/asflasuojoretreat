@@ -1,4 +1,5 @@
 // src/pages/AuthPage.tsx
+
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import {
@@ -54,6 +55,7 @@ type DashboardStats = {
   pending_verification: number;
   cash_payment: number;
   expected_revenue: number;
+  received_money: number; // NEW
 };
 
 type FilterStatus = "all" | "confirmed" | "pending";
@@ -67,6 +69,7 @@ const statsDefaults: DashboardStats = {
   pending_verification: 0,
   cash_payment: 0,
   expected_revenue: 0,
+  received_money: 0, // NEW
 };
 
 // ============================================
@@ -142,6 +145,11 @@ export function AuthPage() {
         accent: "from-[#5b1e2e] to-[#7b2a3b]",
       },
       {
+        label: "Visitors",
+        value: stats.visitor_count,
+        accent: "from-[#4338ca] to-[#6366f1]",
+      },
+      {
         label: "Present attendees",
         value: stats.confirmed_attendees,
         accent: "from-[#0f766e] to-[#14b8a6]",
@@ -150,11 +158,6 @@ export function AuthPage() {
         label: "Awaiting attendees",
         value: stats.awaiting_confirmation,
         accent: "from-[#d97706] to-[#f59e0b]",
-      },
-      {
-        label: "Visitors",
-        value: stats.visitor_count,
-        accent: "from-[#4338ca] to-[#6366f1]",
       },
       {
         label: "Total Transfers",
@@ -180,6 +183,11 @@ export function AuthPage() {
         label: "Total Expected (₦)",
         value: stats.expected_revenue.toLocaleString("en-NG"),
         accent: "from-[#7c3aed] to-[#a855f7]",
+      },
+      {
+        label: "Total Received (₦)", // NEW KPI
+        value: stats.received_money.toLocaleString("en-NG"),
+        accent: "from-[#0ea5e9] to-[#38bdf8]",
       },
     ],
     [stats],
