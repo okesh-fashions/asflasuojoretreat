@@ -4,6 +4,7 @@ import { LandingPage } from "./pages/LandingPage";
 import { AuthPage } from "./pages/AuthPage";
 import { ProtectedRoute } from "./components/Auth/ProtectedRoute";
 import { NotFound } from "./pages/NotFound";
+import { PictureAttendance } from "./pages/PictureAttendance";
 
 function App() {
   return (
@@ -27,8 +28,10 @@ function App() {
 
       <Routes>
         <Route path="/" element={<LandingPage />} />
-        <Route path="/admin" element={<AuthPage />} />
+        <Route path="/flyer" element={<PictureAttendance />} />
+        <Route path="/picture-attendance" element={<PictureAttendance />} />
         <Route path="/auth" element={<Navigate to="/admin" replace />} />
+        <Route path="/admin" element={<AuthPage />} />
         <Route
           path="/dashboard"
           element={

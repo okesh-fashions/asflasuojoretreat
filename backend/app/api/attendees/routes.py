@@ -347,7 +347,8 @@ def get_attendees_stats_endpoint():
                 "confirmed_attendees"),
             func.sum(case((Attendees.is_visitor == True, 1), else_=0)
                      ).label("visitor_count"),
-            # ========== NEW: payment counts ==========
+            
+            # ========== PAYMENT COUNTS ==========
             func.sum(case(
                 ((Attendees.payment_method == 'bank_transfer') &
                  (Attendees.payment_status == 'verified'), 1),
@@ -363,19 +364,29 @@ def get_attendees_stats_endpoint():
                 else_=0
             )).label("cash_payment"),
 
-            # ========== NEW: expected revenue ==========
-            # Count cash (unpaid) + verified transfer + pending transfer
+            # ========== REVENUE CALCULATIONS ==========
+            # 1. Expected revenue (Cash + ALL Bank Transfers)
             func.coalesce(func.sum(
                 case(
                     (
                         (Attendees.payment_method == 'cash') |
-                        ((Attendees.payment_method == 'bank_transfer') &
-                         (Attendees.payment_status.in_(['verified', 'pending_verification']))),
+                        (Attendees.payment_method == 'bank_transfer'),
                         Attendees.amount_due
                     ),
                     else_=0
                 )
             ), 0).label("expected_revenue"),
+
+            # 2. Received money (ALL Bank Transfers, regardless of verification status)
+            func.coalesce(func.sum(
+                case(
+                    (
+                        (Attendees.payment_method == 'bank_transfer'),
+                        Attendees.amount_due
+                    ),
+                    else_=0
+                )
+            ), 0).label("received_money"),
         )
 
         stats_record = db.session.execute(query).one()
@@ -387,6 +398,7 @@ def get_attendees_stats_endpoint():
         pending_verification = int(stats_record.pending_verification or 0)
         cash_payment = int(stats_record.cash_payment or 0)
         expected_revenue = float(stats_record.expected_revenue or 0)
+        received_money = float(stats_record.received_money or 0)
 
         return jsonify({
             "status": "SUCCESS",
@@ -400,6 +412,7 @@ def get_attendees_stats_endpoint():
                 "pending_verification": pending_verification,
                 "cash_payment": cash_payment,
                 "expected_revenue": expected_revenue,
+                "received_money": received_money,
             },
             "code": 200
         }), 200

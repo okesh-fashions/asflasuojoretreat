@@ -1,4 +1,5 @@
 // src/pages/AuthPage.tsx
+
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import {
@@ -54,6 +55,7 @@ type DashboardStats = {
   pending_verification: number;
   cash_payment: number;
   expected_revenue: number;
+  received_money: number; // NEW
 };
 
 type FilterStatus = "all" | "confirmed" | "pending";
@@ -67,6 +69,7 @@ const statsDefaults: DashboardStats = {
   pending_verification: 0,
   cash_payment: 0,
   expected_revenue: 0,
+  received_money: 0, // NEW
 };
 
 // ============================================
@@ -142,39 +145,49 @@ export function AuthPage() {
         accent: "from-[#5b1e2e] to-[#7b2a3b]",
       },
       {
-        label: "Confirmed",
-        value: stats.confirmed_attendees,
-        accent: "from-[#0f766e] to-[#14b8a6]",
-      },
-      {
-        label: "Awaiting",
-        value: stats.awaiting_confirmation,
-        accent: "from-[#d97706] to-[#f59e0b]",
-      },
-      {
         label: "Visitors",
         value: stats.visitor_count,
         accent: "from-[#4338ca] to-[#6366f1]",
       },
       {
-        label: "Paid transfer",
-        value: stats.paid_transfer,
-        accent: "from-[#059669] to-[#34d399]",
+        label: "Present attendees",
+        value: stats.confirmed_attendees,
+        accent: "from-[#0f766e] to-[#14b8a6]",
       },
       {
-        label: "Pending verify",
-        value: stats.pending_verification,
-        accent: "from-[#ca8a04] to-[#facc15]",
+        label: "Awaiting attendees",
+        value: stats.awaiting_confirmation,
+        accent: "from-[#d97706] to-[#f59e0b]",
       },
       {
-        label: "Cash at venue",
+        label: "Total Transfers",
+        value: stats.paid_transfer + stats.pending_verification,
+        accent: "from-[#b91c1c] to-[#ef4444]",
+      },
+      {
+        label: "Total Cash",
         value: stats.cash_payment,
         accent: "from-[#b91c1c] to-[#ef4444]",
       },
       {
-        label: "Expected ₦",
+        label: "Verified Transfers",
+        value: stats.paid_transfer,
+        accent: "from-[#059669] to-[#34d399]",
+      },
+      {
+        label: "Unverified Transfers",
+        value: stats.pending_verification,
+        accent: "from-[#ca8a04] to-[#facc15]",
+      },
+      {
+        label: "Total Expected (₦)",
         value: stats.expected_revenue.toLocaleString("en-NG"),
         accent: "from-[#7c3aed] to-[#a855f7]",
+      },
+      {
+        label: "Total Received (₦)", // NEW KPI
+        value: stats.received_money.toLocaleString("en-NG"),
+        accent: "from-[#0ea5e9] to-[#38bdf8]",
       },
     ],
     [stats],
@@ -310,6 +323,8 @@ export function AuthPage() {
       Level: attendee.level || "N/A",
       Visitor: attendee.is_visitor ? "Yes" : "No",
       Status: attendee.is_confirmed ? "Confirmed" : "Pending",
+      "Payment Method":
+        attendee.payment_method === "bank_transfer" ? "Bank Transfer" : "Cash",
       "Registered On": attendee.registered_on
         ? new Date(attendee.registered_on).toLocaleString("en-NG")
         : "N/A",
@@ -327,6 +342,7 @@ export function AuthPage() {
       { wch: 8 },
       { wch: 10 },
       { wch: 12 },
+      { wch: 16 },
       { wch: 24 },
       { wch: 20 },
     ];
@@ -366,6 +382,7 @@ export function AuthPage() {
           "Level",
           "Visitor",
           "Status",
+          "Payment Method",
           "Registered On",
         ],
       ],
@@ -378,6 +395,7 @@ export function AuthPage() {
         attendee.level || "N/A",
         attendee.is_visitor ? "Yes" : "No",
         attendee.is_confirmed ? "Confirmed" : "Pending",
+        attendee.payment_method === "bank_transfer" ? "Bank Transfer" : "Cash",
         attendee.registered_on
           ? new Date(attendee.registered_on).toLocaleString("en-NG")
           : "N/A",
@@ -400,14 +418,15 @@ export function AuthPage() {
       },
       columnStyles: {
         0: { cellWidth: 30, halign: "center" },
-        1: { cellWidth: 110 },
-        2: { cellWidth: 70 },
-        3: { cellWidth: 100 },
-        4: { cellWidth: 100 },
-        5: { cellWidth: 40, halign: "center" },
-        6: { cellWidth: 45, halign: "center" },
-        7: { cellWidth: 65, halign: "center" },
-        8: { cellWidth: 90 },
+        1: { cellWidth: 100 },
+        2: { cellWidth: 65 },
+        3: { cellWidth: 90 },
+        4: { cellWidth: 90 },
+        5: { cellWidth: 35, halign: "center" },
+        6: { cellWidth: 40, halign: "center" },
+        7: { cellWidth: 60, halign: "center" },
+        8: { cellWidth: 75, halign: "center" },
+        9: { cellWidth: 95 },
       },
       margin: { left: 40, right: 40 },
       didParseCell: (data) => {

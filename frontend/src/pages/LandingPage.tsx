@@ -1,6 +1,6 @@
 // src/pages/LandingPage.tsx
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import QRCode from "qrcode";
 import toast from "react-hot-toast";
 import {
@@ -8,9 +8,9 @@ import {
   CheckCircle2,
   Download,
   Phone,
-  Mail, // Added missing Mail import
-  ShieldCheck,
-  Sparkles,
+  Mail,
+  // ShieldCheck,
+  // Sparkles,
   UserRound,
   Wallet,
   Upload,
@@ -29,8 +29,8 @@ type AttendeeFormState = {
   department: string;
   level: string;
   is_visitor: boolean;
-  pay_now: boolean; // true = Yes, false = No
-  receipt?: File | null; // receipt image if pay_now
+  pay_now: boolean;
+  receipt?: File | null;
 };
 
 type AttendeeRecord = {
@@ -69,7 +69,7 @@ const initialForm: AttendeeFormState = {
   department: "",
   level: "",
   is_visitor: false,
-  pay_now: false,
+  pay_now: true,
   receipt: null,
 };
 
@@ -83,7 +83,6 @@ const facultyOptions = [
   "Transport",
   "Management Sciences",
   "Social Sciences",
-  "Engineering",
   "Other",
 ];
 
@@ -113,6 +112,41 @@ export function LandingPage() {
   const [qrDataUrl, setQrDataUrl] = useState("");
   const [receiptPreview, setReceiptPreview] = useState<string>("");
   const [copiedField, setCopiedField] = useState<string>("");
+
+  // Countdown state
+  const [timeLeft, setTimeLeft] = useState({
+    days: 0,
+    hours: 0,
+    minutes: 0,
+    seconds: 0,
+  });
+
+  // Countdown effect
+  useEffect(() => {
+    const targetDate = new Date("2026-11-13T10:00:00").getTime();
+
+    const interval = setInterval(() => {
+      const now = new Date().getTime();
+      const distance = targetDate - now;
+
+      if (distance < 0) {
+        clearInterval(interval);
+        setTimeLeft({ days: 0, hours: 0, minutes: 0, seconds: 0 });
+        return;
+      }
+
+      setTimeLeft({
+        days: Math.floor(distance / (1000 * 60 * 60 * 24)),
+        hours: Math.floor(
+          (distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60),
+        ),
+        minutes: Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60)),
+        seconds: Math.floor((distance % (1000 * 60)) / 1000),
+      });
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, []);
 
   const updateField = (
     field: keyof AttendeeFormState,
@@ -239,7 +273,6 @@ export function LandingPage() {
     setIsSubmitting(true);
 
     try {
-      // Determine payment method
       const paymentMethod =
         form.is_visitor || form.pay_now ? "bank_transfer" : "cash";
 
@@ -331,7 +364,6 @@ export function LandingPage() {
       if (navigator.clipboard && window.isSecureContext) {
         await navigator.clipboard.writeText(text);
       } else {
-        // Fallback for non-HTTPS / older browsers
         const textarea = document.createElement("textarea");
         textarea.value = text;
         textarea.style.position = "fixed";
@@ -390,7 +422,7 @@ export function LandingPage() {
           <section className="grid gap-8 lg:grid-cols-[1.1fr_0.9fr]">
             <div className="space-y-5">
               <div className="inline-flex items-center gap-2 rounded-full bg-white/60 px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.26em] text-[#5b1e2e] shadow-sm backdrop-blur-[8px] sm:text-sm">
-                <Sparkles className="h-4 w-4" />
+                {/* <Sparkles className="h-4 w-4" /> */}
                 1st Semester's Retreat
               </div>
 
@@ -406,13 +438,13 @@ export function LandingPage() {
 
               <div className="flex flex-wrap items-center gap-3 text-sm text-[#3e1d2b] sm:text-base">
                 <div className="inline-flex items-center gap-2 rounded-full bg-white/60 px-3 py-2 shadow-sm backdrop-blur-[8px]">
-                  <ShieldCheck className="h-4 w-4 text-[#5b1e2e]" />
+                  {/* <ShieldCheck className="h-4 w-4 text-[#5b1e2e]" /> */}
                   <span className="text-xs sm:text-sm">
                     {retreatInfo.motto}
                   </span>
                 </div>
                 <div className="inline-flex items-center gap-2 rounded-full bg-white/60 px-3 py-2 shadow-sm backdrop-blur-[8px]">
-                  <Sparkles className="h-4 w-4 text-[#5b1e2e]" />
+                  {/* <Sparkles className="h-4 w-4 text-[#5b1e2e]" />  */}
                   <span className="text-xs sm:text-sm">
                     {retreatInfo.slogan}
                   </span>
@@ -435,6 +467,50 @@ export function LandingPage() {
                   <p className="mt-1 text-sm font-semibold text-[#2a0d18] sm:mt-2 sm:text-base">
                     {retreatInfo.venue}
                   </p>
+                </div>
+              </div>
+
+              {/* Countdown Timer */}
+              <div className="rounded-xl bg-white/60 p-4 shadow-sm backdrop-blur-[8px] sm:rounded-2xl sm:p-5">
+                <div className="mb-3 flex items-center gap-2">
+                  <div className="h-1.5 w-1.5 rounded-full bg-[#5b1e2e] animate-pulse" />
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#5b1e2e]/70 sm:text-xs">
+                    Retreat commences in
+                  </p>
+                </div>
+                <div className="grid grid-cols-4 gap-2 sm:gap-3">
+                  <div className="flex flex-col items-center justify-center rounded-xl bg-white/80 py-2.5 shadow-sm ring-1 ring-[#5b1e2e]/5">
+                    <span className="text-xl font-black text-[#220b13] sm:text-2xl">
+                      {timeLeft.days}
+                    </span>
+                    <span className="text-[9px] font-bold uppercase tracking-wider text-[#5b1e2e]/60">
+                      Days
+                    </span>
+                  </div>
+                  <div className="flex flex-col items-center justify-center rounded-xl bg-white/80 py-2.5 shadow-sm ring-1 ring-[#5b1e2e]/5">
+                    <span className="text-xl font-black text-[#220b13] sm:text-2xl">
+                      {timeLeft.hours}
+                    </span>
+                    <span className="text-[9px] font-bold uppercase tracking-wider text-[#5b1e2e]/60">
+                      Hours
+                    </span>
+                  </div>
+                  <div className="flex flex-col items-center justify-center rounded-xl bg-white/80 py-2.5 shadow-sm ring-1 ring-[#5b1e2e]/5">
+                    <span className="text-xl font-black text-[#220b13] sm:text-2xl">
+                      {timeLeft.minutes}
+                    </span>
+                    <span className="text-[9px] font-bold uppercase tracking-wider text-[#5b1e2e]/60">
+                      Mins
+                    </span>
+                  </div>
+                  <div className="flex flex-col items-center justify-center rounded-xl bg-white/80 py-2.5 shadow-sm ring-1 ring-[#5b1e2e]/5">
+                    <span className="text-xl font-black text-[#b42318] sm:text-2xl">
+                      {timeLeft.seconds}
+                    </span>
+                    <span className="text-[9px] font-bold uppercase tracking-wider text-[#5b1e2e]/60">
+                      Secs
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -940,6 +1016,37 @@ export function LandingPage() {
                     <p>Venue: {retreatInfo.venue}</p>
                     <p>School: {retreatInfo.school}</p>
                   </div>
+
+                  {/* I'll Be Attending Flyer CTA */}
+                  <Link
+                    to="/picture-attendance"
+                    className="group relative block overflow-hidden rounded-xl bg-gradient-to-br from-[#5b1e2e] via-[#7c2a3a] to-[#b44b61] p-3.5 shadow-lg shadow-[#5b1e2e]/25 transition hover:shadow-xl active:scale-[0.98] sm:rounded-2xl sm:p-4"
+                  >
+                    <div className="absolute -top-10 -right-10 h-28 w-28 rounded-full bg-white/10 blur-2xl" />
+                    <div className="absolute -bottom-10 -left-10 h-20 w-20 rounded-full bg-white/5 blur-2xl" />
+
+                    <div className="relative flex items-center gap-3">
+                      <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-white/15 text-white backdrop-blur-sm sm:h-11 sm:w-11">
+                        {/* <Sparkles className="h-4 w-4 sm:h-5 sm:w-5" /> */}
+                      </div>
+
+                      <div className="min-w-0 flex-1">
+                        <p className="text-[9px] font-semibold uppercase tracking-[0.22em] text-white/70 sm:text-[10px]">
+                          Bonus for you
+                        </p>
+                        <p className="text-sm font-bold text-white sm:text-base">
+                          Generate your attending flyer
+                        </p>
+                        <p className="mt-0.5 text-[10px] text-white/75 sm:text-xs">
+                          Add your photo and name — download & share
+                        </p>
+                      </div>
+
+                      <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-white text-[#5b1e2e] shadow-md transition group-hover:translate-x-0.5 sm:h-9 sm:w-9">
+                        <ArrowRight className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                      </div>
+                    </div>
+                  </Link>
 
                   <button
                     type="button"
